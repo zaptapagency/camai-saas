@@ -96,7 +96,7 @@ this repo*, not the go-to-market timeline.
   identification or productivity scoring. Summary exposes `stations_total` /
   `stations_unstaffed`; dashboard shows a **stations-unstaffed tile**. Unit-tested.
 
-**Test status: 135 passed** across all packages incl. the Postgres integration
+**Test status: 138 passed** across all packages incl. the Postgres integration
 suite (the crypto-gated identity tests pass once `cryptography` is installed).
 
 ## 🔜 Next (remaining follow-ups)
@@ -120,8 +120,12 @@ suite (the crypto-gated identity tests pass once `cryptography` is installed).
 - Ingest still uses the `X-Device-Tenant` seam by default; cert-derived identity
   (`app/security.py`) is built + tested but only enforced once ingest is switched
   to `Depends(current_device)` behind a TLS proxy (see Next #3).
-- Retail dwell-time events are modeled in the schema (`dwell`) but not yet emitted
-  by the line-crossing counter — add zone-dwell tracking.
+- ~~Retail dwell-time events are modeled in the schema (`dwell`) but not yet emitted
+  by the line-crossing counter~~ **Done** — the retail line-crossing counter now
+  emits `dwell` events for any `zones` drawn on a retail camera (grace-windowed
+  per-shopper presence, same mechanism as the queue counter); they flow into the
+  existing mode-agnostic dwell aggregation. Unit-tested. Cameras with no zones are
+  unchanged.
 - No object storage / clip snapshot path yet (schema has `clip_ref`).
 
 ## How to run the tests
