@@ -1,0 +1,13 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "camai-schema"
+version = "1.0.0"
+description = "CamAI shared event contract (edge <-> cloud)"
+requires-python = ">=3.10"
+dependencies = ["pydantic>=2.5,<3"]
+
+[tool.setuptools]
+py-modules = ["camai_schema"]

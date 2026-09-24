@@ -1,0 +1,44 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# ML weights & media (never commit these)
+*.pt
+*.onnx
+*.engine
+*.mp4
+*.avi
+*.mkv
+clips/
+snapshots/
+
+# Node / Next.js
+node_modules/
+.next/
+out/
+dist/
+
+# Env & secrets
+.env
+.env.*
+*.pem
+*.key
+device-cert*
+
+# Local edge state / runtime DBs (SQLite dev stores, queues, registries)
+event-queue.db
+*.sqlite
+*.db
+*.log
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/

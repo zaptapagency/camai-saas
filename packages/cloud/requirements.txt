@@ -1,0 +1,10 @@
+# Install the shared schema first:  pip install -e ../schema
+fastapi>=0.110
+uvicorn[standard]>=0.29
+httpx>=0.27          # for TestClient / integration tests
+pytest>=8.0
+
+# Production backends (not needed for the SQLite dev store or the test suite):
+psycopg[binary]>=3.1   # TimescaleDB store (CAMAI_STORE=postgres)
+stripe>=8.0            # metered billing (app/billing.py, app/billing_job.py)
+cryptography>=42.0     # device-cert fingerprint cross-check in app/security.py (lazy)

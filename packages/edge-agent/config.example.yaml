@@ -1,0 +1,131 @@
+# CamAI edge-agent site config — one file per site.
+#
+# Coordinates for lines/zones are NORMALIZED to [0, 1] (fraction of frame width
+# and height) so they survive resolution changes. During real installs these are
+# produced by the calibration wizard; here they're hand-drawn for the demo.
+
+tenant_id: demo-tenant
+site_id: demo-site-01
+device_id: edge-box-0001
+
+detector:
+  weights: yolo11n.pt   # nano baseline; auto-downloads on first run
+  device: auto          # auto | cpu | cuda:0
+  imgsz: 640
+
+cloud:
+  # Leave ingest_url empty to run fully offline (events buffer in the local queue
+  # and print to the console). Point it at the cloud ingest API to sync.
+  ingest_url: ""            # e.g. https://ingest.camai.example.com
+  device_cert: ""          # per-device mTLS client cert (path)
+  device_key: ""
+  ca_bundle: ""
+  flush_interval_seconds: 15
+  heartbeat_interval_seconds: 30
+
+cameras:
+  # --- RETAIL: entrance line-crossing -------------------------------------
+  - id: cam-front-door
+    source: sample.mp4       # path to a video file, an rtsp:// url, or "0" for webcam
+    mode: retail
+    target_fps: 8
+    min_confidence: 0.35
+    lines:
+      - id: entrance
+        # A near-horizontal line across the middle of the frame. Crossing
+        # top->bottom counts as an entry (flip with invert: true if reversed).
+        a: { x: 0.15, y: 0.55 }
+        b: { x: 0.85, y: 0.55 }
+        invert: false
+
+  # --- PARKING: per-space occupancy (uncomment to use) --------------------
+  # - id: cam-lot-a
+  #   source: rtsp://user:pass@192.168.1.50:554/Streaming/Channels/101
+  #   mode: parking
+  #   target_fps: 4
+  #   zones:
+  #     - id: space-1
+  #       polygon:
+  #         - { x: 0.10, y: 0.40 }
+  #         - { x: 0.28, y: 0.40 }
+  #         - { x: 0.30, y: 0.75 }
+  #         - { x: 0.08, y: 0.75 }
+  #     - id: space-2
+  #       polygon:
+  #         - { x: 0.30, y: 0.40 }
+  #         - { x: 0.48, y: 0.40 }
+  #         - { x: 0.50, y: 0.75 }
+  #         - { x: 0.28, y: 0.75 }
+
+  # --- QUEUE: queue length + wait time (uncomment to use) ----------------
+  # - id: cam-checkout
+  #   source: rtsp://user:pass@192.168.1.55:554/stream1
+  #   mode: queue
+  #   target_fps: 5
+  #   zones:
+  #     - id: till-1
+  #       capacity: 5          # alert when more than 5 people are waiting
+  #       polygon:
+  #         - { x: 0.30, y: 0.45 }
+  #         - { x: 0.70, y: 0.45 }
+  #         - { x: 0.72, y: 0.90 }
+  #         - { x: 0.28, y: 0.90 }
+
+  # --- STAFFING: workstation coverage (e.g. a restaurant) ----------------
+  # Anonymous, station-level: is each work area staffed, and for how long is it
+  # left empty? Does NOT identify or score individual workers.
+  # - id: cam-kitchen
+  #   source: rtsp://user:pass@192.168.1.58:554/stream1
+  #   mode: staffing
+  #   target_fps: 4
+  #   zones:
+  #     - id: grill
+  #       polygon: [ {x: 0.10, y: 0.35}, {x: 0.45, y: 0.35}, {x: 0.45, y: 0.85}, {x: 0.10, y: 0.85} ]
+  #     - id: prep
+  #       polygon: [ {x: 0.55, y: 0.35}, {x: 0.90, y: 0.35}, {x: 0.90, y: 0.85}, {x: 0.55, y: 0.85} ]
+
+  # --- TRAFFIC: directional vehicle flow across a line (smart city) -------
+  # Reuses the default COCO model (cars/buses/trucks all count as vehicles).
+  # Optionally add a detector.classes map to break volume down by vehicle type.
+  # - id: cam-cordon
+  #   source: rtsp://user:pass@192.168.1.57:554/stream1
+  #   mode: traffic
+  #   target_fps: 8
+  #   lines:
+  #     - id: main-st            # forward = one way across the line, reverse = the other
+  #       a: { x: 0.05, y: 0.50 }
+  #       b: { x: 0.95, y: 0.50 }
+  #       invert: false
+
+  # --- SAFETY / PPE: compliance in a required-equipment zone -------------
+  # Needs a PPE-trained model: point detector.weights at it and map its class
+  # ids via detector.classes (below), since COCO has no helmet/vest classes.
+  # - id: cam-dock
+  #   source: rtsp://user:pass@192.168.1.56:554/stream1
+  #   mode: safety
+  #   target_fps: 5
+  #   zones:
+  #     - id: hazard-zone
+  #       required_ppe: [helmet, vest]   # a person here missing either => violation
+  #       polygon:
+  #         - { x: 0.20, y: 0.30 }
+  #         - { x: 0.80, y: 0.30 }
+  #         - { x: 0.80, y: 0.90 }
+  #         - { x: 0.20, y: 0.90 }
+  # detector:                            # (top-level) example PPE class map
+  #   weights: ppe-yolo11.pt
+  #   classes: { 0: person, 1: helmet, 2: vest, 3: no_helmet, 4: no_vest }
+
+  # --- WAREHOUSE: zone object count (beta) -------------------------------
+  # - id: cam-bay-3
+  #   source: rtsp://user:pass@192.168.1.60:554/stream1
+  #   mode: warehouse
+  #   target_fps: 6
+  #   zones:
+  #     - id: bay-3
+  #       capacity: 20
+  #       polygon:
+  #         - { x: 0.20, y: 0.30 }
+  #         - { x: 0.80, y: 0.30 }
+  #         - { x: 0.90, y: 0.90 }
+  #         - { x: 0.10, y: 0.90 }

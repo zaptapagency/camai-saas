@@ -1,0 +1,227 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>CamAI Dashboard</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<style>
+  :root {
+    --bg: #0e1116; --panel: #171b22; --panel-2: #1f242d; --line: #2a303a;
+    --fg: #e6e9ef; --muted: #9aa4b2; --accent: #4c8dff; --ok: #35c46b;
+    --warn: #f0a92b; --bad: #f0533b;
+  }
+  @media (prefers-color-scheme: light) {
+    :root { --bg:#f5f6f8; --panel:#fff; --panel-2:#f0f2f5; --line:#e3e6ea;
+            --fg:#161a20; --muted:#5b6674; }
+  }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--fg);
+         font:14px/1.5 -apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif; }
+  header { display:flex; align-items:center; gap:16px; flex-wrap:wrap;
+           padding:16px 20px; border-bottom:1px solid var(--line); background:var(--panel); }
+  header h1 { font-size:18px; margin:0; letter-spacing:.3px; }
+  header h1 span { color:var(--accent); }
+  .grow { flex:1; }
+  label { color:var(--muted); font-size:12px; }
+  input, select { background:var(--panel-2); color:var(--fg); border:1px solid var(--line);
+                  border-radius:8px; padding:7px 10px; font-size:13px; }
+  .dot { width:8px; height:8px; border-radius:50%; display:inline-block; margin-right:6px; }
+  .live { color:var(--muted); font-size:12px; }
+  main { padding:20px; max-width:1200px; margin:0 auto; }
+  .tiles { display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:14px; }
+  .tile { background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:16px 18px; }
+  .tile .k { color:var(--muted); font-size:12px; text-transform:uppercase; letter-spacing:.6px; }
+  .tile .v { font-size:34px; font-weight:650; margin-top:6px; }
+  .tile .v .unit { font-size:15px; color:var(--muted); font-weight:500; margin-left:1px; }
+  .grid2 { display:grid; grid-template-columns:1.3fr 1fr; gap:16px; margin-top:16px; }
+  @media (max-width:820px){ .grid2 { grid-template-columns:1fr; } }
+  .card { background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:16px 18px; }
+  .card h2 { font-size:13px; text-transform:uppercase; letter-spacing:.6px; color:var(--muted);
+             margin:0 0 12px; }
+  table { width:100%; border-collapse:collapse; font-size:13px; }
+  th, td { text-align:left; padding:8px 6px; border-bottom:1px solid var(--line); }
+  th { color:var(--muted); font-weight:500; font-size:11px; text-transform:uppercase; }
+  td.num { text-align:right; font-variant-numeric:tabular-nums; }
+  .badge { padding:2px 8px; border-radius:999px; font-size:11px; font-weight:600; }
+  .b-parked { background:rgba(240,83,59,.16); color:var(--bad); }
+  .b-free { background:rgba(53,196,107,.16); color:var(--ok); }
+  .feed { max-height:340px; overflow:auto; }
+  .feed .row { display:flex; gap:10px; padding:7px 0; border-bottom:1px solid var(--line); }
+  .feed .type { font-weight:600; min-width:120px; }
+  .muted { color:var(--muted); }
+  .empty { color:var(--muted); padding:18px 4px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Cam<span>AI</span> · Live</h1>
+  <div>
+    <label for="tenant">Tenant</label>
+    <input id="tenant" value="demo-tenant" />
+  </div>
+  <div>
+    <label for="refresh">Refresh</label>
+    <select id="refresh">
+      <option value="5000">5s</option>
+      <option value="10000" selected>10s</option>
+      <option value="30000">30s</option>
+      <option value="0">Off</option>
+    </select>
+  </div>
+  <div class="grow"></div>
+  <div class="live"><span id="pulse" class="dot" style="background:var(--muted)"></span><span id="status">connecting…</span></div>
+</header>
+
+<main>
+  <div class="tiles" id="tiles"></div>
+
+  <div class="grid2">
+    <div class="card">
+      <h2>Occupancy by camera / zone</h2>
+      <canvas id="occChart" height="150"></canvas>
+      <div id="occEmpty" class="empty" hidden>No occupancy samples yet.</div>
+    </div>
+    <div class="card">
+      <h2>Parking spaces</h2>
+      <table><thead><tr><th>Camera</th><th>Space</th><th>State</th></tr></thead>
+      <tbody id="parking"></tbody></table>
+      <div id="parkingEmpty" class="empty" hidden>No parking cameras reporting.</div>
+    </div>
+  </div>
+
+  <div class="grid2">
+    <div class="card">
+      <h2>Device health</h2>
+      <table><thead><tr><th>Device</th><th>Agent</th><th class="num">Queued</th><th>Streams (fps)</th><th>Last seen</th></tr></thead>
+      <tbody id="devices"></tbody></table>
+      <div id="devicesEmpty" class="empty" hidden>No devices have checked in.</div>
+    </div>
+    <div class="card">
+      <h2>Recent events</h2>
+      <div class="feed" id="feed"></div>
+      <div id="feedEmpty" class="empty" hidden>No events yet.</div>
+    </div>
+  </div>
+</main>
+
+<script>
+const $ = (id) => document.getElementById(id);
+let chart, timer;
+
+function tile(k, v) {
+  return `<div class="tile"><div class="k">${k}</div><div class="v">${v}</div></div>`;
+}
+function ago(iso) {
+  if (!iso) return "—";
+  const s = Math.max(0, (Date.now() - new Date(iso).getTime()) / 1000);
+  if (s < 60) return Math.round(s) + "s ago";
+  if (s < 3600) return Math.round(s/60) + "m ago";
+  return Math.round(s/3600) + "h ago";
+}
+function esc(x){ return String(x ?? "").replace(/[&<>]/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c])); }
+
+function fmtWait(s) {
+  if (s == null) return "—";
+  if (s < 60) return Math.round(s) + "<span class='unit'>s</span>";
+  const m = Math.floor(s / 60), r = Math.round(s % 60);
+  return m + "<span class='unit'>m</span> " + r + "<span class='unit'>s</span>";
+}
+
+function renderTiles(t) {
+  let html =
+    tile("Active cameras (billed)", t.active_cameras ?? "—") +
+    tile("Retail occupancy", t.retail_occupancy) +
+    tile("Entries", t.entries) +
+    tile("Exits", t.exits) +
+    tile("Parking occupied", t.parking_spaces_occupied) +
+    tile("Avg wait" + (t.wait_samples ? ` (${t.wait_samples})` : ""), fmtWait(t.avg_wait_seconds)) +
+    tile("PPE violations", t.ppe_violations ?? 0) +
+    tile("Vehicle crossings", t.vehicle_crossings ?? 0);
+  if (t.stations_total)
+    html += tile("Stations unstaffed",
+      `${t.stations_unstaffed}<span class="unit">/${t.stations_total}</span>`);
+  $("tiles").innerHTML = html;
+}
+
+function renderOccupancy(occ) {
+  const has = occ.length > 0;
+  $("occEmpty").hidden = has;
+  const labels = occ.map(o => o.camera_id + (o.zone_id ? " · " + o.zone_id : ""));
+  const data = occ.map(o => o.count ?? 0);
+  const style = getComputedStyle(document.body);
+  if (!chart) {
+    chart = new Chart($("occChart"), {
+      type: "bar",
+      data: { labels, datasets: [{ data, label: "count",
+        backgroundColor: style.getPropertyValue("--accent").trim() || "#4c8dff",
+        borderRadius: 6 }] },
+      options: { plugins:{legend:{display:false}}, responsive:true,
+        scales:{ x:{ticks:{color:style.getPropertyValue("--muted")}},
+                 y:{beginAtZero:true, ticks:{color:style.getPropertyValue("--muted"), precision:0}} } }
+    });
+  } else {
+    chart.data.labels = labels; chart.data.datasets[0].data = data; chart.update();
+  }
+}
+
+function renderParking(rows) {
+  $("parkingEmpty").hidden = rows.length > 0;
+  $("parking").innerHTML = rows.map(p => `
+    <tr><td>${esc(p.camera_id)}</td><td>${esc(p.zone_id)}</td>
+    <td><span class="badge ${p.state==="parked"?"b-parked":"b-free"}">${p.state}</span></td></tr>`).join("");
+}
+
+function renderDevices(rows) {
+  $("devicesEmpty").hidden = rows.length > 0;
+  $("devices").innerHTML = rows.map(d => {
+    const fps = Object.entries(d.stream_fps||{}).map(([c,f])=>`${esc(c)}:${f}`).join(", ") || "—";
+    return `<tr><td>${esc(d.device_id)}</td><td class="muted">${esc(d.agent_version)}</td>
+      <td class="num">${d.queued_events ?? 0}</td><td class="muted">${fps}</td>
+      <td class="muted">${ago(d.ts)}</td></tr>`;
+  }).join("");
+}
+
+function renderFeed(rows) {
+  $("feedEmpty").hidden = rows.length > 0;
+  $("feed").innerHTML = rows.map(e => {
+    const where = e.zone_id || e.line_id || "";
+    const val = e.count!=null ? `count ${e.count}` : (e.delta!=null ? `Δ ${e.delta}` : "");
+    return `<div class="row"><span class="type">${esc(e.type)}</span>
+      <span class="muted">${esc(e.camera_id)} ${esc(where)}</span>
+      <span class="grow"></span><span>${esc(val)}</span>
+      <span class="muted">${ago(e.ts)}</span></div>`;
+  }).join("");
+}
+
+async function refresh() {
+  const tenant = $("tenant").value.trim() || "demo-tenant";
+  try {
+    const r = await fetch(`/v1/tenants/${encodeURIComponent(tenant)}/summary`);
+    if (!r.ok) throw new Error(r.status);
+    const s = await r.json();
+    renderTiles(s.totals);
+    renderOccupancy(s.occupancy || []);
+    renderParking(s.parking || []);
+    renderDevices(s.devices || []);
+    renderFeed(s.recent || []);
+    $("pulse").style.background = "var(--ok)";
+    $("status").textContent = "live · updated " + new Date().toLocaleTimeString();
+  } catch (e) {
+    $("pulse").style.background = "var(--bad)";
+    $("status").textContent = "cannot reach API (" + e.message + ")";
+  }
+}
+
+function schedule() {
+  clearInterval(timer);
+  const ms = parseInt($("refresh").value, 10);
+  if (ms > 0) timer = setInterval(refresh, ms);
+}
+
+$("tenant").addEventListener("change", refresh);
+$("refresh").addEventListener("change", schedule);
+refresh(); schedule();
+</script>
+</body>
+</html>

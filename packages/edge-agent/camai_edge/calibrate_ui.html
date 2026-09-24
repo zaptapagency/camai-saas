@@ -1,0 +1,280 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>CamAI Calibration</title>
+<style>
+  :root { --bg:#0e1116; --panel:#171b22; --panel-2:#1f242d; --line:#2a303a;
+          --fg:#e6e9ef; --muted:#9aa4b2; --accent:#4c8dff; --ok:#35c46b; --bad:#f0533b; }
+  @media (prefers-color-scheme: light){ :root{ --bg:#f5f6f8; --panel:#fff; --panel-2:#eef1f4;
+          --line:#e3e6ea; --fg:#161a20; --muted:#5b6674; } }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--fg);
+         font:14px/1.5 -apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif; }
+  header { display:flex; gap:14px; align-items:center; flex-wrap:wrap;
+           padding:14px 18px; border-bottom:1px solid var(--line); background:var(--panel); }
+  h1 { font-size:17px; margin:0; } h1 span{ color:var(--accent); }
+  .grow{ flex:1; }
+  select,button,input { background:var(--panel-2); color:var(--fg); border:1px solid var(--line);
+           border-radius:8px; padding:7px 11px; font-size:13px; cursor:pointer; }
+  button.primary{ background:var(--accent); border-color:var(--accent); color:#fff; font-weight:600; }
+  button.active{ outline:2px solid var(--accent); }
+  button:disabled{ opacity:.5; cursor:default; }
+  main{ display:grid; grid-template-columns:1fr 320px; gap:16px; padding:16px; max-width:1200px; margin:0 auto; }
+  @media (max-width:900px){ main{ grid-template-columns:1fr; } }
+  .stage{ background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:12px; }
+  #wrap{ position:relative; width:100%; }
+  canvas{ width:100%; border-radius:10px; display:block; background:#000; cursor:crosshair; }
+  .side{ background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:14px; }
+  .side h2{ font-size:12px; text-transform:uppercase; letter-spacing:.6px; color:var(--muted); margin:0 0 10px; }
+  .hint{ color:var(--muted); font-size:12px; margin:8px 0 14px; }
+  .item{ display:flex; align-items:center; gap:8px; padding:7px 0; border-bottom:1px solid var(--line); font-size:13px; }
+  .item .tag{ font-weight:600; } .item .grow{ flex:1; }
+  .item small{ color:var(--muted); }
+  .toolbar{ display:flex; gap:8px; flex-wrap:wrap; margin-bottom:10px; }
+  .status{ font-size:12px; color:var(--muted); }
+  .swatch{ width:10px; height:10px; border-radius:3px; display:inline-block; }
+  .s-line{ background:#ffb020; } .s-zone{ background:#35c46b; }
+  input.txt{ cursor:text; width:70px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Cam<span>AI</span> Calibration</h1>
+  <select id="camera"></select>
+  <span id="mode" class="status"></span>
+  <div class="grow"></div>
+  <button id="discover">Discover cameras</button>
+  <button id="reload">Reload snapshot</button>
+  <button id="save" class="primary">Save geometry</button>
+</header>
+
+<dialog id="discoverDlg" style="border:1px solid var(--line); border-radius:14px; background:var(--panel); color:var(--fg); max-width:560px; width:92%; padding:0;">
+  <div style="padding:14px 16px; border-bottom:1px solid var(--line); display:flex; align-items:center; gap:10px;">
+    <strong style="flex:1;">Discovered cameras (ONVIF)</strong>
+    <button id="discoverClose">Close</button>
+  </div>
+  <div style="padding:14px 16px;">
+    <p class="hint" style="margin-top:0;">Scans the local network for ONVIF cameras. Optional credentials let the scan resolve each camera's RTSP stream URL. Nothing is saved here — copy an RTSP URL into your site config to add a camera.</p>
+    <div style="display:flex; gap:8px; margin-bottom:12px;">
+      <input id="discUser" class="txt" style="width:auto; flex:1;" placeholder="username (optional)" />
+      <input id="discPass" class="txt" style="width:auto; flex:1;" type="password" placeholder="password (optional)" />
+      <button id="discoverRun" class="primary">Scan</button>
+    </div>
+    <div id="discoverResults"></div>
+  </div>
+</dialog>
+
+<main>
+  <div class="stage">
+    <div class="toolbar">
+      <button id="toolLine" data-tool="line"><span class="swatch s-line"></span> Draw line</button>
+      <button id="toolZone" data-tool="zone"><span class="swatch s-zone"></span> Draw zone</button>
+      <button id="finishZone" disabled>Finish zone</button>
+      <button id="undo">Undo point</button>
+    </div>
+    <div id="wrap"><canvas id="cv" width="1280" height="720"></canvas></div>
+    <p class="hint" id="hint">Pick a camera to load a snapshot.</p>
+  </div>
+
+  <div class="side">
+    <h2>Lines (entry / exit)</h2>
+    <div id="lines"></div>
+    <div id="linesEmpty" class="hint">No lines yet — click “Draw line”, then two points across the doorway.</div>
+    <h2 style="margin-top:18px;">Zones (spaces / bays)</h2>
+    <div id="zones"></div>
+    <div id="zonesEmpty" class="hint">No zones yet — click “Draw zone”, click ≥3 corners, then “Finish zone”.</div>
+    <p class="status" id="saveStatus"></p>
+  </div>
+</main>
+
+<script>
+const $ = (id)=>document.getElementById(id);
+const cv = $("cv"), ctx = cv.getContext("2d");
+let img = new Image();
+let cameras = [], current = null;
+let lines = [], zones = [];
+let tool = null, draftLine = [], draftZone = [];
+
+function esc(x){ return String(x??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])); }
+function norm(evt){
+  const r = cv.getBoundingClientRect();
+  return { x: Math.min(1,Math.max(0,(evt.clientX-r.left)/r.width)),
+           y: Math.min(1,Math.max(0,(evt.clientY-r.top)/r.height)) };
+}
+const px = (p)=>({ x:p.x*cv.width, y:p.y*cv.height });
+
+function draw(){
+  ctx.clearRect(0,0,cv.width,cv.height);
+  if (img.complete && img.naturalWidth) ctx.drawImage(img,0,0,cv.width,cv.height);
+  else { ctx.fillStyle="#000"; ctx.fillRect(0,0,cv.width,cv.height); }
+
+  // committed lines
+  ctx.lineWidth=3; ctx.font="14px sans-serif";
+  for (const l of lines){
+    const a=px(l.a), b=px(l.b);
+    ctx.strokeStyle="#ffb020"; ctx.beginPath(); ctx.moveTo(a.x,a.y); ctx.lineTo(b.x,b.y); ctx.stroke();
+    // arrow showing "entry" direction (left-hand normal of a->b, flipped if invert)
+    const mx=(a.x+b.x)/2, my=(a.y+b.y)/2, dx=b.x-a.x, dy=b.y-a.y, len=Math.hypot(dx,dy)||1;
+    let nx=-dy/len, ny=dx/len; if(l.invert){ nx=-nx; ny=-ny; }
+    ctx.beginPath(); ctx.moveTo(mx,my); ctx.lineTo(mx+nx*26,my+ny*26); ctx.stroke();
+    ctx.fillStyle="#ffb020"; ctx.fillText(l.id+" →in", a.x+4, a.y-6);
+    dot(a,"#ffb020"); dot(b,"#ffb020");
+  }
+  // committed zones
+  for (const z of zones){
+    const pts=z.polygon.map(px);
+    ctx.strokeStyle="#35c46b"; ctx.fillStyle="rgba(53,196,107,.15)";
+    ctx.beginPath(); pts.forEach((p,i)=> i?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y)); ctx.closePath();
+    ctx.fill(); ctx.stroke();
+    ctx.fillStyle="#35c46b"; ctx.fillText(z.id, pts[0].x+4, pts[0].y-6);
+    pts.forEach(p=>dot(p,"#35c46b"));
+  }
+  // drafts
+  ctx.strokeStyle="#4c8dff"; ctx.fillStyle="#4c8dff";
+  draftLine.map(px).forEach(p=>dot(p,"#4c8dff"));
+  if (draftLine.length===1){ /* waiting for 2nd point */ }
+  if (draftZone.length){
+    const pts=draftZone.map(px);
+    ctx.beginPath(); pts.forEach((p,i)=> i?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y)); ctx.stroke();
+    pts.forEach(p=>dot(p,"#4c8dff"));
+  }
+}
+function dot(p,c){ ctx.save(); ctx.fillStyle=c; ctx.beginPath(); ctx.arc(p.x,p.y,5,0,7); ctx.fill(); ctx.restore(); }
+
+function nextId(prefix, arr){
+  let n=1; const ids=new Set(arr.map(x=>x.id));
+  while(ids.has(prefix+"-"+n)) n++;
+  return prefix+"-"+n;
+}
+
+function renderLists(){
+  $("linesEmpty").hidden = lines.length>0;
+  $("lines").innerHTML = lines.map((l,i)=>`
+    <div class="item"><span class="tag" style="color:#ffb020">${esc(l.id)}</span>
+      <label class="grow"><input type="checkbox" ${l.invert?"checked":""} data-inv="${i}"> <small>invert direction</small></label>
+      <button data-del-line="${i}">✕</button></div>`).join("");
+  $("zonesEmpty").hidden = zones.length>0;
+  $("zones").innerHTML = zones.map((z,i)=>`
+    <div class="item"><span class="tag" style="color:#35c46b">${esc(z.id)}</span>
+      <small class="grow">${z.polygon.length} pts</small>
+      <input class="txt" type="number" min="0" placeholder="cap" value="${z.capacity??""}" data-cap="${i}">
+      <button data-del-zone="${i}">✕</button></div>`).join("");
+
+  $("lines").querySelectorAll("[data-inv]").forEach(el=>el.onchange=e=>{ lines[+e.target.dataset.inv].invert=e.target.checked; draw(); });
+  $("lines").querySelectorAll("[data-del-line]").forEach(el=>el.onclick=e=>{ lines.splice(+e.target.dataset.delLine,1); renderLists(); draw(); });
+  $("zones").querySelectorAll("[data-cap]").forEach(el=>el.onchange=e=>{ const v=e.target.value; zones[+e.target.dataset.cap].capacity = v===""?null:parseInt(v,10); });
+  $("zones").querySelectorAll("[data-del-zone]").forEach(el=>el.onclick=e=>{ zones.splice(+e.target.dataset.delZone,1); renderLists(); draw(); });
+}
+
+function setTool(t){
+  tool = (tool===t)?null:t;
+  draftLine=[]; draftZone=[];
+  $("toolLine").classList.toggle("active", tool==="line");
+  $("toolZone").classList.toggle("active", tool==="zone");
+  $("finishZone").disabled = tool!=="zone";
+  $("hint").textContent = tool==="line" ? "Click two points across the doorway. Arrow shows the “in” side (toggle invert on the right)."
+    : tool==="zone" ? "Click each corner of the space/bay, then “Finish zone”."
+    : "Select a tool to draw.";
+  draw();
+}
+
+cv.addEventListener("click", (e)=>{
+  if (!tool || !current) return;
+  const p = norm(e);
+  if (tool==="line"){
+    draftLine.push(p);
+    if (draftLine.length===2){
+      lines.push({ id: nextId("line", lines), a:draftLine[0], b:draftLine[1], invert:false });
+      draftLine=[]; renderLists();
+    }
+  } else if (tool==="zone"){
+    draftZone.push(p);
+  }
+  draw();
+});
+cv.addEventListener("dblclick", ()=>{ if (tool==="zone") finishZone(); });
+
+function finishZone(){
+  if (draftZone.length>=3){
+    zones.push({ id: nextId("zone", zones), polygon: draftZone.slice(), capacity:null });
+    renderLists();
+  }
+  draftZone=[]; draw();
+}
+$("finishZone").onclick = finishZone;
+$("undo").onclick = ()=>{ if (draftZone.length) draftZone.pop(); else if (draftLine.length) draftLine.pop(); draw(); };
+$("toolLine").onclick = ()=>setTool("line");
+$("toolZone").onclick = ()=>setTool("zone");
+
+async function loadCameras(){
+  cameras = await (await fetch("/api/cameras")).json();
+  $("camera").innerHTML = cameras.map(c=>`<option value="${esc(c.id)}">${esc(c.id)} (${esc(c.mode)})</option>`).join("");
+  if (cameras.length) selectCamera(cameras[0].id);
+}
+function selectCamera(id){
+  current = cameras.find(c=>c.id===id);
+  $("camera").value = id;
+  $("mode").textContent = "mode: " + current.mode;
+  lines = JSON.parse(JSON.stringify(current.lines||[]));
+  zones = JSON.parse(JSON.stringify(current.zones||[]));
+  setTool(current.mode==="retail" ? "line" : "zone");
+  renderLists();
+  loadSnapshot();
+}
+function loadSnapshot(){
+  $("hint").textContent = "loading snapshot…";
+  img = new Image();
+  img.onload = ()=>{ cv.width=img.naturalWidth; cv.height=img.naturalHeight; setTool(tool); draw(); $("hint").textContent="Snapshot loaded."; };
+  img.onerror = ()=>{ $("hint").textContent="⚠ could not load a snapshot (camera offline or wrong source). You can still draw on a black frame."; draw(); };
+  img.src = `/api/cameras/${encodeURIComponent(current.id)}/snapshot?t=${Date.now()}`;
+}
+$("camera").onchange = (e)=>selectCamera(e.target.value);
+$("reload").onclick = loadSnapshot;
+
+$("save").onclick = async ()=>{
+  if (!current) return;
+  $("saveStatus").textContent = "saving…";
+  try{
+    const r = await fetch(`/api/cameras/${encodeURIComponent(current.id)}/geometry`, {
+      method:"POST", headers:{"content-type":"application/json"},
+      body: JSON.stringify({ lines, zones }) });
+    const body = await r.json();
+    if (!r.ok) throw new Error(body.detail || r.status);
+    // keep local cache in sync
+    current.lines = JSON.parse(JSON.stringify(lines));
+    current.zones = JSON.parse(JSON.stringify(zones));
+    $("saveStatus").textContent = `✓ saved ${body.lines} line(s), ${body.zones} zone(s) to the config`;
+  }catch(e){ $("saveStatus").textContent = "✗ save failed: " + e.message; }
+};
+
+// --- ONVIF discovery ------------------------------------------------------
+const dlg = $("discoverDlg");
+$("discover").onclick = ()=>{ $("discoverResults").innerHTML=""; dlg.showModal(); };
+$("discoverClose").onclick = ()=> dlg.close();
+$("discoverRun").onclick = async ()=>{
+  const box = $("discoverResults");
+  box.innerHTML = `<p class="hint">Scanning the LAN for ONVIF cameras…</p>`;
+  const qs = new URLSearchParams({ username: $("discUser").value, password: $("discPass").value });
+  try{
+    const found = await (await fetch("/api/discover?"+qs.toString())).json();
+    if (!Array.isArray(found) || !found.length){
+      box.innerHTML = `<p class="hint">No ONVIF cameras answered. Check that the cameras are on this network and have ONVIF enabled, or add one by pasting its RTSP URL into the site config.</p>`;
+      return;
+    }
+    box.innerHTML = found.map(c=>`
+      <div class="item">
+        <span class="tag">${esc(c.name)}</span>
+        <small class="grow">${esc(c.rtsp_url || c.xaddr || "")}</small>
+        <span class="status">${esc(c.source)}</span>
+      </div>`).join("");
+  }catch(e){
+    box.innerHTML = `<p class="hint">✗ discovery failed: ${esc(e.message)}</p>`;
+  }
+};
+
+loadCameras();
+</script>
+</body>
+</html>

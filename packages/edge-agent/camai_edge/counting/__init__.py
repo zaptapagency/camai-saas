@@ -1,0 +1,38 @@
+"""Counter factory — maps a camera's mode to its counting strategy.
+
+One pipeline, three modes: the rest of the edge agent is mode-agnostic and just
+asks here for the right counter.
+"""
+
+from __future__ import annotations
+
+from camai_schema import Mode
+
+from camai_edge.config import CameraConfig
+from camai_edge.counting.base import BaseCounter
+from camai_edge.counting.line_crossing import LineCrossingCounter
+from camai_edge.counting.queue import QueueCounter
+from camai_edge.counting.safety import SafetyCounter
+from camai_edge.counting.staffing import StaffingCounter
+from camai_edge.counting.traffic import TrafficCounter
+from camai_edge.counting.zone_occupancy import ZoneOccupancyCounter
+
+
+def make_counter(tenant_id: str, site_id: str, camera: CameraConfig) -> BaseCounter:
+    mode = Mode(camera.mode)
+    if mode == Mode.retail:
+        return LineCrossingCounter(tenant_id, site_id, camera)
+    if mode in (Mode.parking, Mode.warehouse):
+        return ZoneOccupancyCounter(tenant_id, site_id, camera)
+    if mode == Mode.queue:
+        return QueueCounter(tenant_id, site_id, camera)
+    if mode == Mode.safety:
+        return SafetyCounter(tenant_id, site_id, camera)
+    if mode == Mode.traffic:
+        return TrafficCounter(tenant_id, site_id, camera)
+    if mode == Mode.staffing:
+        return StaffingCounter(tenant_id, site_id, camera)
+    raise ValueError(f"unsupported mode: {mode}")
+
+
+__all__ = ["make_counter", "BaseCounter"]
