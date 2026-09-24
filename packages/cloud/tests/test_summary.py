@@ -129,6 +129,29 @@ def test_summary_staffing_coverage():
     assert s["totals"]["stations_unstaffed"] == 1   # only 'prep' is empty
 
 
+def test_summary_staffing_active_vs_idle():
+    """Staffed stations split into active vs static from the activity labels."""
+    client = _client()
+    events = [
+        # grill: manned and being worked.
+        _ev(camera_id="kitchen", type=EventType.occupancy_sample, mode=Mode.staffing,
+            zone_id="grill", count=1, labels=["active"]),
+        # prep: manned but standing idle.
+        _ev(camera_id="kitchen", type=EventType.occupancy_sample, mode=Mode.staffing,
+            zone_id="prep", count=1, labels=["static"]),
+        # dish: empty — neither active nor idle, just unstaffed.
+        _ev(camera_id="kitchen", type=EventType.occupancy_sample, mode=Mode.staffing,
+            zone_id="dish", count=0),
+    ]
+    batch = EventBatch(device_id="d1", tenant_id="t1", events=events)
+    client.post("/v1/ingest/events", content=batch.model_dump_json(), headers=_JSON)
+    s = client.get("/v1/tenants/t1/summary").json()
+    assert s["totals"]["stations_total"] == 3
+    assert s["totals"]["stations_unstaffed"] == 1
+    assert s["totals"]["stations_active"] == 1     # grill
+    assert s["totals"]["stations_static"] == 1     # prep (idle), not counted active
+
+
 def test_summary_avg_wait_none_without_queue():
     client = _client()
     batch = EventBatch(device_id="d1", tenant_id="t1", events=[

@@ -139,9 +139,12 @@ function renderTiles(t) {
     tile("Avg browse" + (t.browse_samples ? ` (${t.browse_samples})` : ""), fmtWait(t.avg_browse_seconds)) +
     tile("PPE violations", t.ppe_violations ?? 0) +
     tile("Vehicle crossings", t.vehicle_crossings ?? 0);
-  if (t.stations_total)
+  if (t.stations_total) {
     html += tile("Stations unstaffed",
       `${t.stations_unstaffed}<span class="unit">/${t.stations_total}</span>`);
+    html += tile("Stations idle",
+      `${t.stations_static ?? 0}<span class="unit">/${t.stations_total}</span>`);
+  }
   $("tiles").innerHTML = html;
 }
 

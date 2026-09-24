@@ -92,11 +92,17 @@ this repo*, not the go-to-market timeline.
 - **Staffing / workstation-coverage vertical** (`edge/counting/staffing.py`,
   `mode: staffing`) — a seventh mode for e.g. restaurants: per-station staff
   headcount with a debounced staffed⇄unstaffed transition (grace period absorbs
-  brief absences). **Anonymous and station-level** by design — no individual
-  identification or productivity scoring. Summary exposes `stations_total` /
-  `stations_unstaffed`; dashboard shows a **stations-unstaffed tile**. Unit-tested.
+  brief absences), **plus station activity** — a staffed station is tagged
+  `active` while a present worker is moving (bounding-box motion — plating,
+  reaching, turning) and flips to `static` once every present worker has been
+  still past an idle grace, so "manned but standing idle during the rush" alerts
+  as timely as "unmanned". **Anonymous and station-level** by design — activity is
+  per *station*, never per employee: no biometric identification, no individual
+  productivity scoring. Summary exposes `stations_total` / `stations_unstaffed` /
+  `stations_active` / `stations_static`; dashboard shows **stations-unstaffed** and
+  **stations-idle** tiles. Unit-tested.
 
-**Test status: 138 passed** across all packages incl. the Postgres integration
+**Test status: 142 passed** across all packages incl. the Postgres integration
 suite (the crypto-gated identity tests pass once `cryptography` is installed).
 
 ## 🔜 Next (remaining follow-ups)

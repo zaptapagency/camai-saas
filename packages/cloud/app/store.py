@@ -178,12 +178,14 @@ class Store:
                 (tenant_id,),
             ).fetchall()
 
-            # Latest headcount per staffing station (mode='staffing') for coverage.
+            # Latest sample per staffing station (mode='staffing'): headcount for
+            # coverage, and the activity tag in labels for active-vs-static.
             staffing_rows = cur.execute(
                 """
                 SELECT camera_id,
                        json_extract(payload, '$.zone_id') AS zone_id,
                        json_extract(payload, '$.count')   AS count,
+                       json_extract(payload, '$.labels')  AS labels,
                        MAX(ts)                            AS ts
                 FROM events
                 WHERE tenant_id=? AND type='occupancy_sample'
@@ -211,6 +213,11 @@ class Store:
 
         stations_total = len(staffing_rows)
         stations_unstaffed = sum(1 for r in staffing_rows if (r[2] or 0) == 0)
+        # Among *staffed* stations, split active vs static from the labels tag
+        # (labels is a JSON string here, e.g. '["static"]').
+        _staffed = [r for r in staffing_rows if (r[2] or 0) > 0]
+        stations_static = sum(1 for r in _staffed if "static" in (r[3] or ""))
+        stations_active = sum(1 for r in _staffed if "active" in (r[3] or ""))
 
         return {
             "tenant_id": tenant_id,
@@ -227,6 +234,8 @@ class Store:
                 "vehicle_crossings": vehicle_crossings,
                 "stations_total": stations_total,
                 "stations_unstaffed": stations_unstaffed,
+                "stations_active": stations_active,
+                "stations_static": stations_static,
             },
             "occupancy": occupancy,
             "parking": parking,

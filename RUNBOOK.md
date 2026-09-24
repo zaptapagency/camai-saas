@@ -251,9 +251,9 @@ pytest -q                                # uses pytest.ini (importlib mode)
 $env:CAMAI_PG_DSN = "postgresql://user@host:5432/camai"; pytest -q
 ```
 
-Expected: **131 passed, 1 skipped** with the first command — the skip is the
+Expected: **135 passed, 1 skipped** with the first command — the skip is the
 Postgres integration suite (`test_store_pg.py`), which needs `CAMAI_PG_DSN`. Set
-it (the second command) to run those 7 tests too, for **138 passed**. If
+it (the second command) to run those 7 tests too, for **142 passed**. If
 `cryptography` isn't installed, the device-identity tests skip as well
 (`pip install cryptography` to run them).
 

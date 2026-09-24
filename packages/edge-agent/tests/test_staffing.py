@@ -68,3 +68,48 @@ def test_vehicle_does_not_staff_a_station():
     # false "staffed" transition).
     events = c.update([_vehicle(1)], FRAME, ts=0.0)
     assert _samples(events) == []
+
+
+def _moving_person(track_id: int, cx: float, cy: float = 50.0) -> Detection:
+    """A person whose box is centred at (cx, cy) — move cx between frames to 'work'."""
+    return Detection(track_id=track_id, object_class=ObjectClass.person, confidence=0.9,
+                     x1=cx - 5, y1=cy - 20, x2=cx + 5, y2=cy)
+
+
+def test_station_active_on_arrival():
+    c = StaffingCounter("t", "s", _camera())
+    s = _samples(c.update([_person(1)], FRAME, ts=0.0))
+    # A worker arriving staffs the station and counts as active.
+    assert len(s) == 1 and s[0].count == 1 and s[0].labels == ["active"]
+
+
+def test_station_flips_to_static_when_motionless():
+    c = StaffingCounter("t", "s", _camera())
+    labels_over_time = []
+    # Present the whole time but never moving (same box every second).
+    for t in range(0, 11):
+        for e in _samples(c.update([_person(1)], FRAME, ts=float(t))):
+            labels_over_time.append((t, e.labels))
+    # Starts active, then flips to static once still past the 8s idle grace.
+    assert labels_over_time[0] == (0, ["active"])
+    assert any(lab == ["static"] for _, lab in labels_over_time), labels_over_time
+    static_ts = next(t for t, lab in labels_over_time if lab == ["static"])
+    assert static_ts > _idle_grace_boundary()
+
+
+def test_motion_keeps_station_active():
+    c = StaffingCounter("t", "s", _camera())
+    seen_static = False
+    # Present and clearly moving every second (box shifts 8px ≈ 0.057 of the frame
+    # diagonal/s, well above the 0.015 threshold), staying inside the 30..70 zone.
+    for i, t in enumerate(range(0, 12)):
+        cx = 40.0 if i % 2 == 0 else 48.0
+        for e in _samples(c.update([_moving_person(1, cx=cx)], FRAME, ts=float(t))):
+            if e.labels == ["static"]:
+                seen_static = True
+    assert not seen_static
+
+
+def _idle_grace_boundary() -> float:
+    from camai_edge.counting.staffing import _IDLE_GRACE_SECONDS
+    return _IDLE_GRACE_SECONDS

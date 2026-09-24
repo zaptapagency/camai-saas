@@ -84,6 +84,11 @@ export interface SummaryTotals {
   /** Retail mode: average per-shopper browse time (dwell). Split from wait. */
   avg_browse_seconds?: number | null;
   browse_samples?: number;
+  /** Staffing mode: station coverage + activity (anonymous, station-level). */
+  stations_total?: number;
+  stations_unstaffed?: number;
+  stations_active?: number;
+  stations_static?: number;
 }
 
 export interface OccupancySample {
