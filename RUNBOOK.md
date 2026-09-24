@@ -251,8 +251,11 @@ pytest -q                                # uses pytest.ini (importlib mode)
 $env:CAMAI_PG_DSN = "postgresql://user@host:5432/camai"; pytest -q
 ```
 
-Expected: **103 passed, 4 skipped** (the 4 skips are crypto-gated identity tests;
-`pip install cryptography` to run them).
+Expected: **131 passed, 1 skipped** with the first command — the skip is the
+Postgres integration suite (`test_store_pg.py`), which needs `CAMAI_PG_DSN`. Set
+it (the second command) to run those 7 tests too, for **138 passed**. If
+`cryptography` isn't installed, the device-identity tests skip as well
+(`pip install cryptography` to run them).
 
 ---
 
