@@ -19,6 +19,18 @@ export function num(v: number | null | undefined): string {
 }
 
 /**
+ * Format a duration in seconds as `45s` or `3m 20s` (mirrors the SPA's `fmtWait`),
+ * for the avg-wait / avg-browse dwell tiles. `—` for null/undefined.
+ */
+export function duration(s: number | null | undefined): string {
+  if (s == null || Number.isNaN(s)) return "—";
+  if (s < 60) return `${Math.round(s)}s`;
+  const m = Math.floor(s / 60);
+  const r = Math.round(s % 60);
+  return `${m}m ${r}s`;
+}
+
+/**
  * A device is considered stale (offline) if we have not heard from it recently.
  * 90s covers a comfortable multiple of the edge heartbeat cadence.
  */

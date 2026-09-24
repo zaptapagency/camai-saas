@@ -14,7 +14,7 @@ import { ParkingTable } from "@/components/ParkingTable";
 import { ErrorState, LoadingState } from "@/components/StateMessage";
 import { LivePulse } from "@/components/TenantControls";
 import { Tile } from "@/components/Tile";
-import { num } from "@/lib/format";
+import { duration, num } from "@/lib/format";
 import { useSummary } from "@/lib/queries";
 import { useTenant } from "@/lib/tenant";
 
@@ -58,6 +58,24 @@ export default function OverviewPage() {
               label="Parking occupied"
               value={num(data.totals.parking_spaces_occupied)}
               tone="bad"
+            />
+            <Tile
+              label="Avg wait"
+              value={duration(data.totals.avg_wait_seconds)}
+              hint={
+                data.totals.wait_samples
+                  ? `${num(data.totals.wait_samples)} in queue`
+                  : "no queue dwell yet"
+              }
+            />
+            <Tile
+              label="Avg browse"
+              value={duration(data.totals.avg_browse_seconds)}
+              hint={
+                data.totals.browse_samples
+                  ? `${num(data.totals.browse_samples)} in store`
+                  : "no retail dwell yet"
+              }
             />
           </div>
 
