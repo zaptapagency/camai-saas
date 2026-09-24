@@ -164,10 +164,13 @@ class Store:
                 (tenant_id,),
             ).fetchall()
 
-            # Recent queue wait times (dwell events) for the average-wait tile.
-            wait_rows = cur.execute(
+            # Recent dwell events, split by mode: queue dwell is "wait time" (avg-wait
+            # tile), retail dwell is "browse time" (avg-browse tile). They mean
+            # different things to the operator, so they must not pool.
+            dwell_rows = cur.execute(
                 """
-                SELECT json_extract(payload, '$.dwell_seconds')
+                SELECT json_extract(payload, '$.mode')          AS mode,
+                       json_extract(payload, '$.dwell_seconds')  AS dwell_seconds
                 FROM events
                 WHERE tenant_id=? AND type='dwell'
                 ORDER BY ts DESC LIMIT 200
@@ -201,8 +204,10 @@ class Store:
         ]
         spaces_occupied = sum(1 for p in parking if p["state"] == "parked")
 
-        waits = [r[0] for r in wait_rows if r[0] is not None]
+        waits = [r[1] for r in dwell_rows if r[0] == "queue" and r[1] is not None]
         avg_wait = round(sum(waits) / len(waits), 1) if waits else None
+        browses = [r[1] for r in dwell_rows if r[0] == "retail" and r[1] is not None]
+        avg_browse = round(sum(browses) / len(browses), 1) if browses else None
 
         stations_total = len(staffing_rows)
         stations_unstaffed = sum(1 for r in staffing_rows if (r[2] or 0) == 0)
@@ -216,6 +221,8 @@ class Store:
                 "parking_spaces_occupied": spaces_occupied,
                 "avg_wait_seconds": avg_wait,
                 "wait_samples": len(waits),
+                "avg_browse_seconds": avg_browse,
+                "browse_samples": len(browses),
                 "ppe_violations": ppe_violations,
                 "vehicle_crossings": vehicle_crossings,
                 "stations_total": stations_total,

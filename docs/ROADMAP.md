@@ -123,9 +123,11 @@ suite (the crypto-gated identity tests pass once `cryptography` is installed).
 - ~~Retail dwell-time events are modeled in the schema (`dwell`) but not yet emitted
   by the line-crossing counter~~ **Done** — the retail line-crossing counter now
   emits `dwell` events for any `zones` drawn on a retail camera (grace-windowed
-  per-shopper presence, same mechanism as the queue counter); they flow into the
-  existing mode-agnostic dwell aggregation. Unit-tested. Cameras with no zones are
-  unchanged.
+  per-shopper presence, same mechanism as the queue counter). The cloud summary
+  splits dwell **by mode**: queue dwell → `avg_wait_seconds` (avg wait), retail
+  dwell → `avg_browse_seconds` (avg browse), so the two metrics don't pool. Both
+  stores + the served SPA (Avg-wait and Avg-browse tiles) updated; unit-tested.
+  Cameras with no zones are unchanged.
 - No object storage / clip snapshot path yet (schema has `clip_ref`).
 
 ## How to run the tests

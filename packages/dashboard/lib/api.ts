@@ -78,6 +78,12 @@ export interface SummaryTotals {
   parking_spaces_occupied: number;
   /** Injected by the summary endpoint: cameras billed this period. */
   active_cameras?: number;
+  /** Queue mode: average per-person wait time (dwell). */
+  avg_wait_seconds?: number | null;
+  wait_samples?: number;
+  /** Retail mode: average per-shopper browse time (dwell). Split from wait. */
+  avg_browse_seconds?: number | null;
+  browse_samples?: number;
 }
 
 export interface OccupancySample {

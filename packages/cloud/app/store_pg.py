@@ -164,13 +164,13 @@ class PgStore:
 
             cur.execute(
                 """
-                SELECT dwell_seconds FROM events
+                SELECT mode, dwell_seconds FROM events
                 WHERE tenant_id=%s AND type='dwell' AND dwell_seconds IS NOT NULL
                 ORDER BY time DESC LIMIT 200
                 """,
                 (tenant_id,),
             )
-            wait_rows = cur.fetchall()
+            dwell_rows = cur.fetchall()
 
             cur.execute(
                 """
@@ -190,8 +190,10 @@ class PgStore:
                     "ts": r[3].isoformat()} for r in park_rows]
         spaces_occupied = sum(1 for p in parking if p["state"] == "parked")
 
-        waits = [r[0] for r in wait_rows if r[0] is not None]
+        waits = [r[1] for r in dwell_rows if _s(r[0]) == "queue" and r[1] is not None]
         avg_wait = round(sum(waits) / len(waits), 1) if waits else None
+        browses = [r[1] for r in dwell_rows if _s(r[0]) == "retail" and r[1] is not None]
+        avg_browse = round(sum(browses) / len(browses), 1) if browses else None
 
         stations_total = len(staffing_rows)
         stations_unstaffed = sum(1 for r in staffing_rows if (r[2] or 0) == 0)
@@ -204,6 +206,8 @@ class PgStore:
                 "parking_spaces_occupied": spaces_occupied,
                 "avg_wait_seconds": avg_wait,
                 "wait_samples": len(waits),
+                "avg_browse_seconds": avg_browse,
+                "browse_samples": len(browses),
                 "ppe_violations": ppe_violations,
                 "vehicle_crossings": vehicle_crossings,
                 "stations_total": stations_total,

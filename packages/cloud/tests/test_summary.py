@@ -51,20 +51,31 @@ def test_summary_totals_and_tiles():
     assert any(p["zone_id"] == "space-1" and p["state"] == "parked" for p in s["parking"])
 
 
-def test_summary_avg_wait_from_dwell_events():
+def test_summary_dwell_split_by_mode():
+    """Queue dwell = wait time; retail dwell = browse time. They must not pool."""
     client = _client()
     events = [
+        # Queue waits: mean 60s.
         _ev(camera_id="till", type=EventType.dwell, mode=Mode.queue,
             zone_id="q1", dwell_seconds=30.0),
         _ev(camera_id="till", type=EventType.dwell, mode=Mode.queue,
             zone_id="q1", dwell_seconds=90.0),
+        # Retail browses: mean 200s — a very different magnitude.
+        _ev(camera_id="floor", type=EventType.dwell, mode=Mode.retail,
+            zone_id="produce", dwell_seconds=150.0),
+        _ev(camera_id="floor", type=EventType.dwell, mode=Mode.retail,
+            zone_id="produce", dwell_seconds=250.0),
     ]
     batch = EventBatch(device_id="d1", tenant_id="t1", events=events)
     client.post("/v1/ingest/events", content=batch.model_dump_json(), headers=_JSON)
 
     s = client.get("/v1/tenants/t1/summary").json()
+    # Wait is queue-only (retail 150/250 do NOT drag it up).
     assert s["totals"]["avg_wait_seconds"] == 60.0
     assert s["totals"]["wait_samples"] == 2
+    # Browse is retail-only.
+    assert s["totals"]["avg_browse_seconds"] == 200.0
+    assert s["totals"]["browse_samples"] == 2
 
 
 def test_summary_counts_ppe_violations_and_keeps_labels():
@@ -126,6 +137,8 @@ def test_summary_avg_wait_none_without_queue():
     s = client.get("/v1/tenants/t1/summary").json()
     assert s["totals"]["avg_wait_seconds"] is None
     assert s["totals"]["wait_samples"] == 0
+    assert s["totals"]["avg_browse_seconds"] is None
+    assert s["totals"]["browse_samples"] == 0
 
 
 def test_summary_parking_free_after_leave():

@@ -136,6 +136,7 @@ function renderTiles(t) {
     tile("Exits", t.exits) +
     tile("Parking occupied", t.parking_spaces_occupied) +
     tile("Avg wait" + (t.wait_samples ? ` (${t.wait_samples})` : ""), fmtWait(t.avg_wait_seconds)) +
+    tile("Avg browse" + (t.browse_samples ? ` (${t.browse_samples})` : ""), fmtWait(t.avg_browse_seconds)) +
     tile("PPE violations", t.ppe_violations ?? 0) +
     tile("Vehicle crossings", t.vehicle_crossings ?? 0);
   if (t.stations_total)
