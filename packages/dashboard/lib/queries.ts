@@ -61,3 +61,26 @@ export function useUsage() {
     ...pollOptions(refreshMs > 0 ? Math.max(refreshMs, 60_000) : 0),
   });
 }
+
+/**
+ * Latest snapshot metadata for one camera. `retry: 0` so a 404 ("no snapshot
+ * yet") surfaces immediately rather than retrying and spamming the API.
+ */
+export function useSnapshotMeta(camera: string) {
+  const { tenantId, refreshMs } = useTenant();
+  return useQuery({
+    queryKey: queryKeys.snapshot(tenantId, camera),
+    queryFn: ({ signal }) => api.snapshotMeta(tenantId, camera, signal),
+    ...pollOptions(refreshMs),
+    retry: 0,
+  });
+}
+
+export function useAccuracy() {
+  const { tenantId, refreshMs } = useTenant();
+  return useQuery({
+    queryKey: queryKeys.accuracy(tenantId),
+    queryFn: ({ signal }) => api.accuracy(tenantId, signal),
+    ...pollOptions(refreshMs),
+  });
+}

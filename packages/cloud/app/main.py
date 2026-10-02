@@ -13,12 +13,16 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from fastapi import Depends, FastAPI, Header
+import base64
+
+from fastapi import Depends, FastAPI, Header, Response
 from fastapi.responses import HTMLResponse, JSONResponse
+from pydantic import BaseModel
 
 from camai_schema import EventBatch, Heartbeat, IngestAck
 
 from app import audit
+from app import snapshots
 from app.billing import month_bounds
 from app.rbac import Role, require_role
 from app.store_factory import get_store
@@ -136,6 +140,68 @@ def tenant_audit(
     mutations that write to it require ``admin``. See :mod:`app.audit`.
     """
     return JSONResponse(audit.list_entries(tenant_id, limit=min(limit, 1000)))
+
+
+# --- Accuracy flywheel: snapshots, labels, measured accuracy ----------------
+# The edge agent pushes a frame + its predicted count; a human labels the true
+# count; we compute per-tenant/per-mode accuracy from the resulting samples.
+# Standalone store (app.snapshots), independent of the main event store.
+
+
+class SnapshotIn(BaseModel):
+    tenant_id: str
+    camera_id: str
+    mode: str
+    ts: str
+    predicted_count: int
+    image_b64: str
+
+
+class LabelIn(BaseModel):
+    actual_count: int
+
+
+@app.post("/v1/ingest/snapshot")
+def ingest_snapshot(body: SnapshotIn) -> dict:
+    image_bytes = base64.b64decode(body.image_b64)
+    snapshots.save_snapshot(
+        body.tenant_id,
+        body.camera_id,
+        body.mode,
+        body.ts,
+        body.predicted_count,
+        image_bytes,
+    )
+    return {"ok": True}
+
+
+@app.get("/v1/tenants/{tenant_id}/cameras/{camera_id}/snapshot.jpg")
+def snapshot_image(tenant_id: str, camera_id: str):
+    img = snapshots.latest_image(tenant_id, camera_id)
+    if img is None:
+        return Response("no snapshot", status_code=404, media_type="text/plain")
+    return Response(img, media_type="image/jpeg", headers={"Cache-Control": "no-store"})
+
+
+@app.get("/v1/tenants/{tenant_id}/cameras/{camera_id}/snapshot")
+def snapshot_meta(tenant_id: str, camera_id: str) -> JSONResponse:
+    meta = snapshots.latest_meta(tenant_id, camera_id)
+    if meta is None:
+        return JSONResponse({"detail": "no snapshot"}, status_code=404)
+    return JSONResponse(meta)
+
+
+@app.post("/v1/tenants/{tenant_id}/cameras/{camera_id}/label")
+def add_label(tenant_id: str, camera_id: str, body: LabelIn) -> JSONResponse:
+    sample = snapshots.add_label(tenant_id, camera_id, body.actual_count)
+    if sample is None:
+        return JSONResponse({"detail": "no snapshot to label"}, status_code=404)
+    return JSONResponse(sample)
+
+
+@app.get("/v1/tenants/{tenant_id}/accuracy")
+def tenant_accuracy(tenant_id: str) -> JSONResponse:
+    return JSONResponse(snapshots.accuracy(tenant_id))
 
 
 @app.get("/v1/tenants/{tenant_id}/usage")

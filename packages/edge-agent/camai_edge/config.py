@@ -90,6 +90,16 @@ class CameraConfig(BaseModel):
     # raises an overheat alert.
     temp_threshold_c: float = Field(default=38.0)
 
+    # Accuracy flywheel (opt-in): seconds between annotated snapshots uploaded to the
+    # cloud for live view + human labelling. 0 disables (default — privacy-first: no
+    # imagery leaves the site unless the operator turns this on).
+    snapshot_seconds: float = Field(default=0.0, ge=0)
+
+    # Retrain capture (opt-in): local directory to write raw frames + detections at the
+    # snapshot cadence, for building a fine-tune dataset. Empty disables. Data stays on
+    # the edge box (training happens where the data is, or it is exported deliberately).
+    capture_dir: str = ""
+
 
 class DetectorConfig(BaseModel):
     weights: str = "yolo11n.pt"  # nano baseline; swap for fine-tuned per-site weights

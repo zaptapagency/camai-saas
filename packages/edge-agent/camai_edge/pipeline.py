@@ -9,11 +9,13 @@ from __future__ import annotations
 import threading
 import time
 
+from camai_edge.capture import FrameCapture
 from camai_edge.config import CameraConfig, DetectorConfig
 from camai_edge.counting import make_counter
 from camai_edge.detect import Detector
 from camai_edge.events import EventQueue
 from camai_edge.ingest import frames
+from camai_edge.snapshots import SnapshotUploader
 from camai_edge.sync import CloudSync
 
 
@@ -29,6 +31,7 @@ class CameraPipeline:
         *,
         show: bool = False,
         loop: bool = False,
+        ingest_url: str = "",
     ) -> None:
         self.camera = camera
         self._queue = queue
@@ -36,6 +39,21 @@ class CameraPipeline:
         self._show = show
         self._loop = loop
         self._stop = threading.Event()
+
+        # Opt-in annotated-snapshot uploader. Own instance per pipeline ⇒ its
+        # per-camera last-sent state is isolated across the camera threads. A no-op
+        # when ingest_url is empty or the camera leaves snapshot_seconds at 0.
+        self._snapshots = SnapshotUploader(ingest_url, tenant_id, site_id)
+
+        # Opt-in retrain capture: write raw frames + detection sidecars locally, at
+        # the snapshot cadence, for building a fine-tune dataset. Own instance per
+        # pipeline ⇒ per-camera isolation. No-op unless capture_dir is set; data
+        # never leaves the box.
+        self._capture = FrameCapture(camera.capture_dir)
+        # Epoch seconds of the last captured frame, so capture follows the snapshot
+        # cadence (snapshot_seconds) independently of whether the cloud uploader is
+        # enabled — an offline box can still build a dataset.
+        self._last_capture_ts: float | None = None
 
         self._detector = Detector(
             weights=detector_cfg.weights,
@@ -79,6 +97,28 @@ class CameraPipeline:
             last = now
             if self._sync is not None:
                 self._sync.stream_fps[cam.id] = round(self._fps, 1)
+
+            # Opt-in accuracy flywheel: every snapshot_seconds, upload one drawn
+            # frame. predicted_count is this frame's detection count (mode-agnostic
+            # and robust); the uploader gates on the interval and is best-effort.
+            if cam.snapshot_seconds > 0 and self._snapshots.enabled:
+                self._snapshots.maybe_upload(
+                    cam.id, cam.mode.value, frame.image, (w, h),
+                    len(detections), self._counter, frame.ts, cam.snapshot_seconds,
+                )
+
+            # Opt-in retrain capture: at the SAME cadence/gate as the snapshot
+            # upload, also persist the RAW (un-annotated) frame + its detections
+            # locally for a fine-tune dataset. Uses frame.image (never the annotated
+            # copy). Best-effort; no-op when capture_dir is "".
+            if cam.snapshot_seconds > 0 and self._capture.enabled:
+                cap_last = self._last_capture_ts
+                if cap_last is None or (frame.ts - cap_last) >= cam.snapshot_seconds:
+                    self._last_capture_ts = frame.ts
+                    self._capture.write(
+                        cam.id, cam.mode.value, frame.image, (w, h),
+                        detections, frame.ts,
+                    )
 
             if self._show:
                 self._render(frame.image, detections, (w, h))

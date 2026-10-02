@@ -1,0 +1,28 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "camai-training"
+version = "0.1.0"
+description = "CamAI retrain pipeline: captured frames+detections -> YOLO fine-tune dataset -> fine-tune -> before/after eval -> promote"
+requires-python = ">=3.10"
+# Core stays torch-free on purpose: dataset building + the count-gate logic are
+# pure stdlib so they (and their tests) run without the ML stack installed.
+dependencies = [
+    # Install the shared schema alongside:  pip install -e ../schema
+    "camai-schema",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0"]
+# The fine-tune / eval steps (retrain.py, evaluate.py) need YOLO. Kept OPTIONAL so
+# `import camai_training.dataset` and the pure tests never pull in torch/ultralytics.
+#   pip install -e '.[train]'
+train = ["ultralytics>=8.3"]
+
+[project.scripts]
+camai-retrain = "camai_training.run:main"
+
+[tool.setuptools.packages.find]
+include = ["camai_training*"]
