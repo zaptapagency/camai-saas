@@ -17,12 +17,14 @@ import random
 import urllib.request
 from datetime import datetime, timedelta, timezone
 
+import sys
+
 from camai_schema import Event, EventBatch, EventType, Heartbeat, Mode, ObjectClass
 
 BASE = "http://localhost:8000"
-TENANT = "demo-tenant"
-SITE = "demo-site-01"
-random.seed(7)
+TENANT = sys.argv[1] if len(sys.argv) > 1 else "demo-tenant"
+SITE = f"{TENANT}-site-01"
+random.seed(sum(map(ord, TENANT)))  # stable but distinct numbers per tenant
 
 now = datetime.now(timezone.utc)
 def ago(sec: float) -> datetime:

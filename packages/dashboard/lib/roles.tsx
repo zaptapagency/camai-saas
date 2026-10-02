@@ -11,6 +11,7 @@
  * call site stays unchanged. See README "What's stubbed".
  */
 
+import { useSession } from "next-auth/react";
 import {
   createContext,
   useCallback,
@@ -49,6 +50,12 @@ const RoleContext = createContext<RoleContextValue | null>(null);
 const STORAGE_KEY = "camai.role";
 
 export function RoleProvider({ children }: { children: ReactNode }) {
+  // When a NextAuth session is present its role claim wins (read-only). When
+  // signed out we keep the original localStorage stub behaviour untouched, so
+  // the app still works without authenticating.
+  const { data: session } = useSession();
+  const sessionRole = session?.user?.role;
+
   const [role, setRoleState] = useState<Role>("admin");
 
   // Hydrate the persisted role after mount to avoid SSR/CSR mismatch.
@@ -63,22 +70,30 @@ export function RoleProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  const setRole = useCallback((r: Role) => {
-    setRoleState(r);
-    try {
-      window.localStorage.setItem(STORAGE_KEY, r);
-    } catch {
-      /* ignore persistence failures */
-    }
-  }, []);
+  const setRole = useCallback(
+    (r: Role) => {
+      // No-op when a session supplies the role — identity is the source of truth.
+      if (sessionRole) return;
+      setRoleState(r);
+      try {
+        window.localStorage.setItem(STORAGE_KEY, r);
+      } catch {
+        /* ignore persistence failures */
+      }
+    },
+    [sessionRole],
+  );
+
+  // Effective role: session claim if signed in, otherwise the stub/localStorage role.
+  const effectiveRole = sessionRole ?? role;
 
   const value = useMemo<RoleContextValue>(
     () => ({
-      role,
+      role: effectiveRole,
       setRole,
-      can: (cap) => CAPABILITIES[role].includes(cap),
+      can: (cap) => CAPABILITIES[effectiveRole].includes(cap),
     }),
-    [role, setRole],
+    [effectiveRole, setRole],
   );
 
   return <RoleContext.Provider value={value}>{children}</RoleContext.Provider>;

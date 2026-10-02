@@ -6,6 +6,8 @@
  * gives each camera's vertical(s) and last activity. One row per camera.
  */
 
+import Link from "next/link";
+
 import { ErrorState, EmptyState, LoadingState } from "@/components/StateMessage";
 import { LivePulse } from "@/components/TenantControls";
 import { isStale, num, timeAgo } from "@/lib/format";
@@ -98,7 +100,7 @@ export default function CamerasPage() {
                   return (
                     <tr key={r.id} className="border-b border-line last:border-b-0 hover:bg-panel-2">
                       <td className="px-4 py-2.5">
-                        <div className="font-medium">{r.id}</div>
+                        <Link href={`/cameras/${encodeURIComponent(r.id)}`} className="font-medium hover:text-accent">{r.id}</Link>
                         <div className="text-xs text-muted">{r.device ?? "—"}</div>
                       </td>
                       <td className="px-4 py-2.5 capitalize">

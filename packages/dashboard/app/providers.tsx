@@ -7,6 +7,7 @@
  */
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { SessionProvider } from "next-auth/react";
 import { useState, type ReactNode } from "react";
 
 import { RoleProvider } from "@/lib/roles";
@@ -28,10 +29,12 @@ export function Providers({ children }: { children: ReactNode }) {
   );
 
   return (
-    <QueryClientProvider client={client}>
-      <TenantProvider>
-        <RoleProvider>{children}</RoleProvider>
-      </TenantProvider>
-    </QueryClientProvider>
+    <SessionProvider>
+      <QueryClientProvider client={client}>
+        <TenantProvider>
+          <RoleProvider>{children}</RoleProvider>
+        </TenantProvider>
+      </QueryClientProvider>
+    </SessionProvider>
   );
 }

@@ -6,10 +6,11 @@
  * is demonstrable during the pilot.
  */
 
+import { signIn, signOut, useSession } from "next-auth/react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-import { ROLES, useRole, type Capability } from "@/lib/roles";
+import { useRole, type Capability } from "@/lib/roles";
 import { TenantControls } from "./TenantControls";
 
 interface NavItem {
@@ -29,7 +30,8 @@ const NAV_ITEMS: NavItem[] = [
 
 export function Nav() {
   const pathname = usePathname();
-  const { role, setRole, can } = useRole();
+  const { role, can } = useRole();
+  const { data: session, status } = useSession();
 
   return (
     <header className="border-b border-line bg-panel">
@@ -62,22 +64,32 @@ export function Nav() {
 
         <div className="ml-auto flex flex-wrap items-center gap-x-5 gap-y-2">
           <TenantControls />
-          <label className="flex items-center gap-2 text-xs text-muted">
-            Role
-            <select
-              value={role}
-              onChange={(e) => setRole(e.target.value as (typeof ROLES)[number])}
-              className="rounded-lg border border-line bg-panel-2 px-2.5 py-1.5 text-sm text-fg"
-              aria-label="Signed-in role (stub)"
-              title="Stub auth: role selection stands in for real SSO"
+          {session?.user ? (
+            <div className="flex items-center gap-3 text-xs text-muted">
+              <span className="flex items-center gap-1.5">
+                <span className="text-fg">{session.user.email}</span>
+                <span className="rounded-md bg-panel-2 px-1.5 py-0.5 text-[11px] uppercase tracking-wide text-accent">
+                  {role}
+                </span>
+              </span>
+              <button
+                type="button"
+                onClick={() => signOut()}
+                className="rounded-lg border border-line bg-panel-2 px-2.5 py-1.5 text-sm text-fg transition-colors hover:text-accent"
+              >
+                Sign out
+              </button>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={() => signIn()}
+              disabled={status === "loading"}
+              className="rounded-lg border border-line bg-panel-2 px-2.5 py-1.5 text-sm text-fg transition-colors hover:text-accent disabled:opacity-60"
             >
-              {ROLES.map((r) => (
-                <option key={r} value={r}>
-                  {r}
-                </option>
-              ))}
-            </select>
-          </label>
+              Sign in
+            </button>
+          )}
         </div>
       </div>
     </header>
