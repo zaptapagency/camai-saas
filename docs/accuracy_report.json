@@ -1,0 +1,271 @@
+{
+  "generated_at": "2026-10-02T13:06:27.062086+00:00",
+  "clips": [
+    {
+      "clip": "retail-door",
+      "mode": "retail",
+      "max_pct_error": 0.0,
+      "mean_pct_error": 0.0,
+      "total_events": 3,
+      "metrics": [
+        {
+          "metric": "entries",
+          "expected": 2.0,
+          "actual": 2.0,
+          "abs_error": 0.0,
+          "pct_error": 0.0
+        },
+        {
+          "metric": "exits",
+          "expected": 1.0,
+          "actual": 1.0,
+          "abs_error": 0.0,
+          "pct_error": 0.0
+        },
+        {
+          "metric": "occupancy",
+          "expected": 1.0,
+          "actual": 1.0,
+          "abs_error": 0.0,
+          "pct_error": 0.0
+        }
+      ]
+    },
+    {
+      "clip": "parking-space-1",
+      "mode": "parking",
+      "max_pct_error": 0.0,
+      "mean_pct_error": 0.0,
+      "total_events": 3,
+      "metrics": [
+        {
+          "metric": "arrivals",
+          "expected": 1.0,
+          "actual": 1.0,
+          "abs_error": 0.0,
+          "pct_error": 0.0
+        },
+        {
+          "metric": "departures",
+          "expected": 1.0,
+          "actual": 1.0,
+          "abs_error": 0.0,
+          "pct_error": 0.0
+        },
+        {
+          "metric": "zone:space-1:arrivals",
+          "expected": 1.0,
+          "actual": 1.0,
+          "abs_error": 0.0,
+          "pct_error": 0.0
+        },
+        {
+          "metric": "zone:space-1:departures",
+          "expected": 1.0,
+          "actual": 1.0,
+          "abs_error": 0.0,
+          "pct_error": 0.0
+        },
+        {
+          "metric": "zone:space-1:occupancy",
+          "expected": 0.0,
+          "actual": 0.0,
+          "abs_error": 0.0,
+          "pct_error": 0.0
+        }
+      ]
+    },
+    {
+      "clip": "warehouse-bay-A",
+      "mode": "warehouse",
+      "max_pct_error": 0.0,
+      "mean_pct_error": 0.0,
+      "total_events": 1,
+      "metrics": [
+        {
+          "metric": "net_delta",
+          "expected": 2.0,
+          "actual": 2.0,
+          "abs_error": 0.0,
+          "pct_error": 0.0
+        },
+        {
+          "metric": "zone:bay:net_delta",
+          "expected": 2.0,
+          "actual": 2.0,
+          "abs_error": 0.0,
+          "pct_error": 0.0
+        }
+      ]
+    },
+    {
+      "clip": "staffing-prep-line",
+      "mode": "staffing",
+      "max_pct_error": 0.0,
+      "mean_pct_error": 0.0,
+      "total_events": 2,
+      "metrics": [
+        {
+          "metric": "zone:prep-line:occupancy",
+          "expected": 1.0,
+          "actual": 1.0,
+          "abs_error": 0.0,
+          "pct_error": 0.0
+        }
+      ]
+    },
+    {
+      "clip": "queue-checkout",
+      "mode": "queue",
+      "max_pct_error": 0.0,
+      "mean_pct_error": 0.0,
+      "total_events": 2,
+      "metrics": [
+        {
+          "metric": "dwell_count",
+          "expected": 2.0,
+          "actual": 2.0,
+          "abs_error": 0.0,
+          "pct_error": 0.0
+        },
+        {
+          "metric": "mean_dwell_seconds",
+          "expected": 2.5,
+          "actual": 2.5,
+          "abs_error": 0.0,
+          "pct_error": 0.0
+        },
+        {
+          "metric": "zone:lane:dwell_count",
+          "expected": 2.0,
+          "actual": 2.0,
+          "abs_error": 0.0,
+          "pct_error": 0.0
+        },
+        {
+          "metric": "zone:lane:mean_dwell_seconds",
+          "expected": 2.5,
+          "actual": 2.5,
+          "abs_error": 0.0,
+          "pct_error": 0.0
+        }
+      ]
+    },
+    {
+      "clip": "safety-dock",
+      "mode": "safety",
+      "max_pct_error": 0.0,
+      "mean_pct_error": 0.0,
+      "total_events": 1,
+      "metrics": [
+        {
+          "metric": "ppe_violations",
+          "expected": 1.0,
+          "actual": 1.0,
+          "abs_error": 0.0,
+          "pct_error": 0.0
+        },
+        {
+          "metric": "zone:dock:ppe_violations",
+          "expected": 1.0,
+          "actual": 1.0,
+          "abs_error": 0.0,
+          "pct_error": 0.0
+        }
+      ]
+    },
+    {
+      "clip": "traffic-cordon",
+      "mode": "traffic",
+      "max_pct_error": 0.0,
+      "mean_pct_error": 0.0,
+      "total_events": 1,
+      "metrics": [
+        {
+          "metric": "vehicle_crossings",
+          "expected": 1.0,
+          "actual": 1.0,
+          "abs_error": 0.0,
+          "pct_error": 0.0
+        }
+      ]
+    },
+    {
+      "clip": "capacity-hall",
+      "mode": "capacity",
+      "max_pct_error": 0.0,
+      "mean_pct_error": 0.0,
+      "total_events": 2,
+      "metrics": [
+        {
+          "metric": "capacity_breaches",
+          "expected": 1.0,
+          "actual": 1.0,
+          "abs_error": 0.0,
+          "pct_error": 0.0
+        },
+        {
+          "metric": "zone:hall:capacity_breaches",
+          "expected": 1.0,
+          "actual": 1.0,
+          "abs_error": 0.0,
+          "pct_error": 0.0
+        }
+      ]
+    },
+    {
+      "clip": "proximity-aisle",
+      "mode": "proximity",
+      "max_pct_error": 0.0,
+      "mean_pct_error": 0.0,
+      "total_events": 1,
+      "metrics": [
+        {
+          "metric": "proximity_alerts",
+          "expected": 1.0,
+          "actual": 1.0,
+          "abs_error": 0.0,
+          "pct_error": 0.0
+        }
+      ]
+    },
+    {
+      "clip": "fire-scene",
+      "mode": "fire",
+      "max_pct_error": 0.0,
+      "mean_pct_error": 0.0,
+      "total_events": 1,
+      "metrics": [
+        {
+          "metric": "hazard_alerts",
+          "expected": 1.0,
+          "actual": 1.0,
+          "abs_error": 0.0,
+          "pct_error": 0.0
+        }
+      ]
+    },
+    {
+      "clip": "thermal-kiosk",
+      "mode": "thermal",
+      "max_pct_error": 0.0,
+      "mean_pct_error": 0.0,
+      "total_events": 1,
+      "metrics": [
+        {
+          "metric": "overheat_alerts",
+          "expected": 1.0,
+          "actual": 1.0,
+          "abs_error": 0.0,
+          "pct_error": 0.0
+        }
+      ]
+    }
+  ],
+  "summary": {
+    "clips": 11,
+    "mean_pct_error": 0.0,
+    "max_pct_error": 0.0,
+    "total_events": 18
+  }
+}

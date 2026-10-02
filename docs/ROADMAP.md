@@ -102,7 +102,39 @@ this repo*, not the go-to-market timeline.
   `stations_active` / `stations_static`; dashboard shows **stations-unstaffed** and
   **stations-idle** tiles. Unit-tested.
 
-**Test status: 142 passed** across all packages incl. the Postgres integration
+- **Four more verticals on the same pipeline** (`edge/counting/{capacity,proximity,fire,thermal}.py`) —
+  one per go-to-market tier, wired into `make_counter` and both cloud stores' summary:
+  - **`capacity`** (Tier 1, no new model) — live headcount vs a zone's occupancy limit
+    (`Zone.capacity`); emits a debounced `capacity_breach` (grace-windowed) plus over-tagged
+    `occupancy_sample`s. Buyers: gyms, venues, clinics.
+  - **`proximity`** (Tier 2, adds a forklift class) — forklift↔pedestrian near-miss: a
+    `proximity_alert` when a person and forklift close within `proximity_threshold` (fraction of
+    the frame diagonal), debounced per person with a clear-grace. Buyers: warehouses (OSHA).
+  - **`fire`** (Tier 3, dedicated model) — fire/smoke `hazard_alert` (type set in `labels`,
+    re-fires when the set changes, clear-grace re-arm), per-zone or whole-scene. Buyers: kitchens,
+    warehouses.
+  - **`thermal`** (Tier 4, extra sensor) — overheat/fever `overheat_alert` off a thermal camera's
+    per-detection `Detection.temperature` vs `temp_threshold_c`, debounced per track. Buyers:
+    access control, industrial.
+  All four are anonymous/zone- or station-level, fully unit-tested, and surfaced as dashboard tiles
+  (`capacity_breaches` / `proximity_alerts` / `hazard_alerts` / `overheat_alerts`).
+
+- **Accuracy report across all verticals** (`edge/accuracy.py`, `accuracy_report.py`) —
+  `tally_metrics` now reduces every event type (incl. ppe/traffic/dwell + the four new
+  alerts); `python -m camai_edge.accuracy_report` runs a deterministic fixture suite over
+  all 11 modes and writes `docs/accuracy_report.{md,json}` — the publishable-format
+  infrastructure (real-camera numbers come from design-partner footage).
+- **Zero-touch onboarding** (`edge/autozone.py`) — suggests calibration zones (grid-density
+  clustering of foot points) and an entry line (dominant travel axis) from observed
+  detections, so setup becomes review-and-confirm instead of draw-from-scratch. Unit-tested;
+  next step is wiring it into the calibration wizard as proposed geometry.
+- **Enterprise trust: RBAC + audit log** (`cloud: rbac.py`, `audit.py`) — a role seam
+  (`viewer<analyst<admin<owner` via `X-CamAI-Role`, the pre-SSO seam a gateway derives from a
+  verified OIDC session) gates the billing-admin and fleet config-push mutations; an
+  append-only, tenant-scoped audit log records them and is read at
+  `GET /v1/tenants/{id}/audit` (analyst+). Fully unit-tested.
+
+**Test status: 200 passed, 1 skipped** across all packages incl. the Postgres integration
 suite (the crypto-gated identity tests pass once `cryptography` is installed).
 
 ## 🔜 Next (remaining follow-ups)

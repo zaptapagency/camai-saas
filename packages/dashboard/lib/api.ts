@@ -89,6 +89,18 @@ export interface SummaryTotals {
   stations_unstaffed?: number;
   stations_active?: number;
   stations_static?: number;
+  /** Safety mode: PPE violations. */
+  ppe_violations?: number;
+  /** Traffic mode: directional vehicle line-crossings. */
+  vehicle_crossings?: number;
+  /** Capacity mode (Tier 1): zone occupancy-limit breaches. */
+  capacity_breaches?: number;
+  /** Proximity mode (Tier 2): forklift↔pedestrian near-miss alerts. */
+  proximity_alerts?: number;
+  /** Fire mode (Tier 3): fire/smoke hazard alerts. */
+  hazard_alerts?: number;
+  /** Thermal mode (Tier 4): overheat/fever alerts. */
+  overheat_alerts?: number;
 }
 
 export interface OccupancySample {

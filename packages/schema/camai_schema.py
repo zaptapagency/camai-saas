@@ -43,6 +43,10 @@ class Mode(str, Enum):
     safety = "safety"  # PPE compliance in a required-equipment zone
     traffic = "traffic"  # smart-city: directional vehicle flow across a line
     staffing = "staffing"  # workstation coverage: is a work area staffed (anonymous)
+    capacity = "capacity"    # Tier 1: live headcount vs a configured occupancy limit
+    proximity = "proximity"  # Tier 2: forklift<->pedestrian near-miss (needs a forklift class)
+    fire = "fire"            # Tier 3: fire/smoke detection (needs a fire/smoke-trained model)
+    thermal = "thermal"      # Tier 4: thermal fever/overheat screening (needs a thermal camera)
 
 
 class EventType(str, Enum):
@@ -57,6 +61,10 @@ class EventType(str, Enum):
     dwell = "dwell"                    # a tracked id left a zone; carries dwell seconds
     ppe_violation = "ppe_violation"    # safety: a person in a zone is missing required PPE
     vehicle_crossing = "vehicle_crossing"  # traffic: a vehicle crossed a line (direction in labels)
+    capacity_breach = "capacity_breach"    # capacity: a zone crossed above its configured occupancy limit
+    proximity_alert = "proximity_alert"    # proximity: a person and a forklift came within the danger distance
+    hazard_alert = "hazard_alert"          # fire: fire/smoke appeared (hazard type in labels)
+    overheat_alert = "overheat_alert"      # thermal: an object/person exceeded the temperature threshold
 
 
 class ObjectClass(str, Enum):
@@ -71,6 +79,9 @@ class ObjectClass(str, Enum):
     bicycle = "bicycle"
     forklift = "forklift"
     pallet = "pallet"
+    # Hazard classes (from a fire/smoke-trained detector; COCO does not provide these).
+    fire = "fire"
+    smoke = "smoke"
     # PPE items (from a safety-trained detector; COCO does not provide these).
     helmet = "helmet"
     vest = "vest"

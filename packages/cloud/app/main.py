@@ -13,12 +13,14 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from fastapi import FastAPI, Header
+from fastapi import Depends, FastAPI, Header
 from fastapi.responses import HTMLResponse, JSONResponse
 
 from camai_schema import EventBatch, Heartbeat, IngestAck
 
+from app import audit
 from app.billing import month_bounds
+from app.rbac import Role, require_role
 from app.store_factory import get_store
 
 app = FastAPI(title="CamAI Cloud (ingest slice)", version="0.1.0")
@@ -119,6 +121,21 @@ def summary(tenant_id: str) -> JSONResponse:
     active = store.active_camera_ids(tenant_id, start.isoformat(), end.isoformat())
     data["totals"]["active_cameras"] = len(active)
     return JSONResponse(data)
+
+
+@app.get("/v1/tenants/{tenant_id}/audit")
+def tenant_audit(
+    tenant_id: str,
+    limit: int = 100,
+    role: Role = Depends(require_role(Role.analyst)),
+) -> JSONResponse:
+    """Tenant-scoped audit trail, newest first.
+
+    Reading the trail is itself privileged — it exposes who did what — so it is
+    gated at ``analyst`` (above plain ``viewer`` dashboard access) while the
+    mutations that write to it require ``admin``. See :mod:`app.audit`.
+    """
+    return JSONResponse(audit.list_entries(tenant_id, limit=min(limit, 1000)))
 
 
 @app.get("/v1/tenants/{tenant_id}/usage")

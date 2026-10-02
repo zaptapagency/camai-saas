@@ -134,6 +134,18 @@ class Store:
             vehicle_crossings = _scalar(cur.execute(
                 "SELECT COUNT(*) FROM events WHERE tenant_id=? AND type='vehicle_crossing'",
                 (tenant_id,)))
+            capacity_breaches = _scalar(cur.execute(
+                "SELECT COUNT(*) FROM events WHERE tenant_id=? AND type='capacity_breach'",
+                (tenant_id,)))
+            proximity_alerts = _scalar(cur.execute(
+                "SELECT COUNT(*) FROM events WHERE tenant_id=? AND type='proximity_alert'",
+                (tenant_id,)))
+            hazard_alerts = _scalar(cur.execute(
+                "SELECT COUNT(*) FROM events WHERE tenant_id=? AND type='hazard_alert'",
+                (tenant_id,)))
+            overheat_alerts = _scalar(cur.execute(
+                "SELECT COUNT(*) FROM events WHERE tenant_id=? AND type='overheat_alert'",
+                (tenant_id,)))
 
             # Latest occupancy sample per (camera, zone). SQLite returns the row
             # matching MAX(ts) for the other selected columns.
@@ -232,6 +244,10 @@ class Store:
                 "browse_samples": len(browses),
                 "ppe_violations": ppe_violations,
                 "vehicle_crossings": vehicle_crossings,
+                "capacity_breaches": capacity_breaches,
+                "proximity_alerts": proximity_alerts,
+                "hazard_alerts": hazard_alerts,
+                "overheat_alerts": overheat_alerts,
                 "stations_total": stations_total,
                 "stations_unstaffed": stations_unstaffed,
                 "stations_active": stations_active,

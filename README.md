@@ -35,7 +35,7 @@ it's the first thing built end to end:
 - RTSP / file / webcam ingest via OpenCV (`camai_edge/ingest.py`)
 - YOLOv11 person/vehicle detection (`camai_edge/detect.py`)
 - Persistent-ID tracking via the detector's built-in ByteTrack (`camai_edge/track.py`)
-- Seven counting modes on **one** pipeline, switched by config:
+- Eleven counting modes on **one** pipeline, switched by config:
   - `retail`   — virtual line-crossing at entrances/exits + zone dwell
   - `parking`  — per-zone occupancy via static ROI + vehicle detection
   - `warehouse`— zone-based object counting (beta; hardest CV problem)
@@ -43,6 +43,10 @@ it's the first thing built end to end:
   - `safety`   — PPE compliance (helmet/vest) in a required-equipment zone (needs a PPE-trained model)
   - `traffic`  — directional vehicle flow across a line (smart city); optional class breakdown
   - `staffing` — workstation coverage (is a work area staffed?); anonymous, station-level
+  - `capacity` — live headcount vs a configured zone occupancy limit → breach alerts (Tier 1)
+  - `proximity`— forklift↔pedestrian near-miss alerts (Tier 2; needs a forklift class)
+  - `fire`     — fire/smoke hazard alerts (Tier 3; needs a fire/smoke-trained model)
+  - `thermal`  — thermal fever/overheat screening (Tier 4; needs a thermal camera)
 - Local event queue + batched, outbound-only sync (`camai_edge/events.py`, `sync.py`)
 - A single YAML config per site describing cameras, zones, and lines
 

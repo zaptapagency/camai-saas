@@ -56,6 +56,19 @@ ARRIVALS = "arrivals"            # parking: total vehicle_parked events
 DEPARTURES = "departures"        # parking: total vehicle_left events
 NET_DELTA = "net_delta"          # warehouse: sum of signed count_delta values
 
+# Alert/analytic verticals shipped after the first three modes. Each reduces its
+# event type into a flat count (global, plus per-zone via zone_key when the event
+# carries a zone). dwell additionally tracks a mean so "average wait" is scored,
+# not just how many dwell events fired.
+PPE_VIOLATIONS = "ppe_violations"        # safety: total ppe_violation events
+VEHICLE_CROSSINGS = "vehicle_crossings"  # traffic: total vehicle_crossing events
+DWELL_COUNT = "dwell_count"              # queue: number of dwell events (people who left)
+MEAN_DWELL_SECONDS = "mean_dwell_seconds"  # queue: mean dwell_seconds over dwell events
+CAPACITY_BREACHES = "capacity_breaches"  # capacity: total capacity_breach events
+PROXIMITY_ALERTS = "proximity_alerts"    # proximity: total proximity_alert events
+HAZARD_ALERTS = "hazard_alerts"          # fire: total hazard_alert events
+OVERHEAT_ALERTS = "overheat_alerts"      # thermal: total overheat_alert events
+
 
 def zone_key(zone_id: str, metric: str) -> str:
     """Namespaced per-zone metric key, e.g. ``zone:space-1:occupancy``."""
@@ -345,6 +358,12 @@ def tally_metrics(events: Iterable[object], mode: Mode) -> dict[str, float]:
     # last instantaneous occupancy_sample seen, globally and per zone
     last_zone_occ: dict[str, float] = {}
 
+    # Running sums for dwell so we can emit a mean at the end (global + per zone).
+    dwell_sum = 0.0
+    dwell_n = 0
+    zone_dwell_sum: dict[str, float] = {}
+    zone_dwell_n: dict[str, int] = {}
+
     for e in events:
         etype = e.type  # str under use_enum_values, compares equal to EventType members
         zid = e.zone_id
@@ -366,6 +385,39 @@ def tally_metrics(events: Iterable[object], mode: Mode) -> dict[str, float]:
             bump(NET_DELTA, d)
             if zid is not None:
                 bump(zone_key(zid, NET_DELTA), d)
+        elif etype == EventType.ppe_violation:
+            bump(PPE_VIOLATIONS)
+            if zid is not None:
+                bump(zone_key(zid, PPE_VIOLATIONS))
+        elif etype == EventType.vehicle_crossing:
+            bump(VEHICLE_CROSSINGS)
+            if zid is not None:
+                bump(zone_key(zid, VEHICLE_CROSSINGS))
+        elif etype == EventType.capacity_breach:
+            bump(CAPACITY_BREACHES)
+            if zid is not None:
+                bump(zone_key(zid, CAPACITY_BREACHES))
+        elif etype == EventType.proximity_alert:
+            bump(PROXIMITY_ALERTS)
+            if zid is not None:
+                bump(zone_key(zid, PROXIMITY_ALERTS))
+        elif etype == EventType.hazard_alert:
+            bump(HAZARD_ALERTS)
+            if zid is not None:
+                bump(zone_key(zid, HAZARD_ALERTS))
+        elif etype == EventType.overheat_alert:
+            bump(OVERHEAT_ALERTS)
+            if zid is not None:
+                bump(zone_key(zid, OVERHEAT_ALERTS))
+        elif etype == EventType.dwell:
+            bump(DWELL_COUNT)
+            secs = float(e.dwell_seconds or 0.0)
+            dwell_sum += secs
+            dwell_n += 1
+            if zid is not None:
+                bump(zone_key(zid, DWELL_COUNT))
+                zone_dwell_sum[zid] = zone_dwell_sum.get(zid, 0.0) + secs
+                zone_dwell_n[zid] = zone_dwell_n.get(zid, 0) + 1
         elif etype == EventType.occupancy_sample:
             count = float(e.count or 0)
             if zid is None:
@@ -381,6 +433,13 @@ def tally_metrics(events: Iterable[object], mode: Mode) -> dict[str, float]:
 
     for zid, count in last_zone_occ.items():
         m[zone_key(zid, OCCUPANCY)] = count
+
+    # Mean dwell (average wait) — only meaningful when at least one dwell fired.
+    if dwell_n:
+        m[MEAN_DWELL_SECONDS] = dwell_sum / dwell_n
+    for zid, n in zone_dwell_n.items():
+        if n:
+            m[zone_key(zid, MEAN_DWELL_SECONDS)] = zone_dwell_sum[zid] / n
 
     return m
 
@@ -438,4 +497,12 @@ __all__ = [
     "ARRIVALS",
     "DEPARTURES",
     "NET_DELTA",
+    "PPE_VIOLATIONS",
+    "VEHICLE_CROSSINGS",
+    "DWELL_COUNT",
+    "MEAN_DWELL_SECONDS",
+    "CAPACITY_BREACHES",
+    "PROXIMITY_ALERTS",
+    "HAZARD_ALERTS",
+    "OVERHEAT_ALERTS",
 ]

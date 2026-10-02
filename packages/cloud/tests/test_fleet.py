@@ -158,7 +158,9 @@ def _client(heartbeats=None):
     )
     app = FastAPI()
     app.include_router(fleet_router.router)
-    return TestClient(app)
+    # The config-push PUT is now admin-gated (app.rbac); authenticate the test
+    # client as admin by default so the round-trip tests reach the handler.
+    return TestClient(app, headers={"X-CamAI-Role": "admin"})
 
 
 def test_config_push_round_trip_and_version_bump():
