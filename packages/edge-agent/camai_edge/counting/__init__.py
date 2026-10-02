@@ -10,10 +10,14 @@ from camai_schema import Mode
 
 from camai_edge.config import CameraConfig
 from camai_edge.counting.base import BaseCounter
+from camai_edge.counting.capacity import CapacityCounter
+from camai_edge.counting.fire import FireCounter
 from camai_edge.counting.line_crossing import LineCrossingCounter
+from camai_edge.counting.proximity import ProximityCounter
 from camai_edge.counting.queue import QueueCounter
 from camai_edge.counting.safety import SafetyCounter
 from camai_edge.counting.staffing import StaffingCounter
+from camai_edge.counting.thermal import ThermalCounter
 from camai_edge.counting.traffic import TrafficCounter
 from camai_edge.counting.zone_occupancy import ZoneOccupancyCounter
 
@@ -32,6 +36,14 @@ def make_counter(tenant_id: str, site_id: str, camera: CameraConfig) -> BaseCoun
         return TrafficCounter(tenant_id, site_id, camera)
     if mode == Mode.staffing:
         return StaffingCounter(tenant_id, site_id, camera)
+    if mode == Mode.capacity:
+        return CapacityCounter(tenant_id, site_id, camera)
+    if mode == Mode.proximity:
+        return ProximityCounter(tenant_id, site_id, camera)
+    if mode == Mode.fire:
+        return FireCounter(tenant_id, site_id, camera)
+    if mode == Mode.thermal:
+        return ThermalCounter(tenant_id, site_id, camera)
     raise ValueError(f"unsupported mode: {mode}")
 
 

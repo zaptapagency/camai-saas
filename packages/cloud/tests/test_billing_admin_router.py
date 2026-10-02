@@ -19,7 +19,9 @@ def _client():
     app = FastAPI()
     app.include_router(router)
     app.dependency_overrides[get_billing_store] = lambda: store
-    return TestClient(app), store
+    # The billing upsert is now admin-gated (app.rbac); authenticate the test
+    # client as admin by default so these round-trip tests exercise the store.
+    return TestClient(app, headers={"X-CamAI-Role": "admin"}), store
 
 
 def test_put_then_get_round_trip():

@@ -18,8 +18,11 @@ from __future__ import annotations
 
 from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, Header, HTTPException
 from pydantic import BaseModel, Field
+
+from app import audit
+from app.rbac import Role, require_role
 
 router = APIRouter(prefix="/v1/admin", tags=["admin-billing"])
 
@@ -54,8 +57,15 @@ def set_billing_account(
     tenant_id: str,
     body: BillingAccountIn,
     store: Any = Depends(get_billing_store),
+    role: Role = Depends(require_role(Role.admin)),
+    x_camai_actor: str = Header(default="unknown", alias="X-CamAI-Actor"),
 ) -> BillingAccountOut:
-    """Create or update a tenant's Stripe billing wiring (idempotent upsert)."""
+    """Create or update a tenant's Stripe billing wiring (idempotent upsert).
+
+    Admin-gated and audited: changing a tenant's billing wiring moves money, so it
+    is exactly the kind of privileged mutation an enterprise security review
+    expects to be both authorized and recorded.
+    """
     store.upsert_billing_account(
         tenant_id,
         body.stripe_customer_id,
@@ -63,6 +73,13 @@ def set_billing_account(
         body.plan,
     )
     account = store.get_billing_account(tenant_id)
+    audit.record(
+        actor=x_camai_actor,
+        action="billing.account.upsert",
+        tenant_id=tenant_id,
+        resource=f"tenant:{tenant_id}:billing",
+        meta={"role": role.value, "plan": body.plan},
+    )
     return BillingAccountOut(**account)
 
 

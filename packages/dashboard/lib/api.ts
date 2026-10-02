@@ -14,7 +14,18 @@
 
 // --- Wire types (mirror camai_schema.py) ------------------------------------
 
-export type Mode = "retail" | "warehouse" | "parking";
+export type Mode =
+  | "retail"
+  | "warehouse"
+  | "parking"
+  | "queue"
+  | "safety"
+  | "traffic"
+  | "staffing"
+  | "capacity"
+  | "proximity"
+  | "fire"
+  | "thermal";
 
 export type EventType =
   | "entry"
@@ -23,13 +34,21 @@ export type EventType =
   | "vehicle_parked"
   | "vehicle_left"
   | "count_delta"
-  | "dwell";
+  | "dwell"
+  | "ppe_violation"
+  | "vehicle_crossing"
+  | "capacity_breach"
+  | "proximity_alert"
+  | "hazard_alert"
+  | "overheat_alert";
 
 export type ObjectClass =
   | "person"
   | "vehicle"
   | "forklift"
   | "pallet"
+  | "fire"
+  | "smoke"
   | "other";
 
 /** A single analytics event (camai_schema.Event). */
@@ -50,6 +69,8 @@ export interface CamEvent {
   delta?: number | null;
   dwell_seconds?: number | null;
   clip_ref?: string | null;
+  /** Small free-form tags (e.g. missing PPE items, hazard type, direction). */
+  labels?: string[] | null;
 }
 
 /** Device/stream health snapshot (camai_schema.Heartbeat). */
@@ -89,6 +110,18 @@ export interface SummaryTotals {
   stations_unstaffed?: number;
   stations_active?: number;
   stations_static?: number;
+  /** Safety mode: PPE violations. */
+  ppe_violations?: number;
+  /** Traffic mode: directional vehicle line-crossings. */
+  vehicle_crossings?: number;
+  /** Capacity mode (Tier 1): zone occupancy-limit breaches. */
+  capacity_breaches?: number;
+  /** Proximity mode (Tier 2): forklift↔pedestrian near-miss alerts. */
+  proximity_alerts?: number;
+  /** Fire mode (Tier 3): fire/smoke hazard alerts. */
+  hazard_alerts?: number;
+  /** Thermal mode (Tier 4): overheat/fever alerts. */
+  overheat_alerts?: number;
 }
 
 export interface OccupancySample {

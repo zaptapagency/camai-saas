@@ -38,6 +38,9 @@ class Detection:
     y1: float
     x2: float
     y2: float
+    # Optional per-detection temperature in Celsius, supplied by a thermal camera
+    # (thermal mode). None for ordinary RGB detectors.
+    temperature: Optional[float] = None
 
     @property
     def centroid(self) -> tuple[float, float]:

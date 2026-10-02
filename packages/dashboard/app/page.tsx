@@ -17,6 +17,7 @@ import { Tile } from "@/components/Tile";
 import { duration, num } from "@/lib/format";
 import { useSummary } from "@/lib/queries";
 import { useTenant } from "@/lib/tenant";
+import { VERTICALS } from "@/lib/verticals";
 
 export default function OverviewPage() {
   const { tenantId } = useTenant();
@@ -39,45 +40,62 @@ export default function OverviewPage() {
       {isError && <ErrorState error={error} />}
       {isPending && !isError && <LoadingState label="Loading dashboard…" />}
 
-      {data && (
+      {data &&
+        (() => {
+          const t = data.totals;
+          const alertTotal =
+            (t.ppe_violations ?? 0) +
+            (t.capacity_breaches ?? 0) +
+            (t.proximity_alerts ?? 0) +
+            (t.hazard_alerts ?? 0) +
+            (t.overheat_alerts ?? 0);
+          return (
         <>
-          <div className="grid grid-cols-2 gap-3.5 sm:grid-cols-3 lg:grid-cols-5">
+          <div className="grid grid-cols-2 gap-3.5 sm:grid-cols-4">
             <Tile
               label="Active cameras (billed)"
-              value={num(data.totals.active_cameras)}
+              value={num(t.active_cameras)}
               tone="accent"
               hint="this billing period"
             />
             <Tile
-              label="Retail occupancy"
-              value={num(data.totals.retail_occupancy)}
-            />
-            <Tile label="Entries" value={num(data.totals.entries)} tone="ok" />
-            <Tile label="Exits" value={num(data.totals.exits)} tone="warn" />
-            <Tile
-              label="Parking occupied"
-              value={num(data.totals.parking_spaces_occupied)}
-              tone="bad"
+              label="Open alerts"
+              value={num(alertTotal)}
+              tone={alertTotal > 0 ? "bad" : "ok"}
+              hint="PPE · capacity · fire · thermal · proximity"
             />
             <Tile
               label="Avg wait"
-              value={duration(data.totals.avg_wait_seconds)}
+              value={duration(t.avg_wait_seconds)}
               hint={
-                data.totals.wait_samples
-                  ? `${num(data.totals.wait_samples)} in queue`
-                  : "no queue dwell yet"
+                t.wait_samples ? `${num(t.wait_samples)} in queue` : "no queue dwell yet"
               }
             />
             <Tile
               label="Avg browse"
-              value={duration(data.totals.avg_browse_seconds)}
+              value={duration(t.avg_browse_seconds)}
               hint={
-                data.totals.browse_samples
-                  ? `${num(data.totals.browse_samples)} in store`
-                  : "no retail dwell yet"
+                t.browse_samples ? `${num(t.browse_samples)} in store` : "no retail dwell yet"
               }
             />
           </div>
+
+          <section className="space-y-3">
+            <h2 className="text-sm font-semibold text-muted">
+              Verticals · live across the fleet
+            </h2>
+            <div className="grid grid-cols-2 gap-3.5 sm:grid-cols-3 lg:grid-cols-5">
+              {VERTICALS.map((v) => (
+                <Tile
+                  key={v.key}
+                  label={v.name}
+                  value={v.value(t)}
+                  hint={v.sub?.(t)}
+                  tone={v.tone}
+                />
+              ))}
+            </div>
+          </section>
 
           <div className="grid gap-4 lg:grid-cols-[1.3fr_1fr]">
             <Card title="Occupancy by camera / zone">
@@ -97,7 +115,8 @@ export default function OverviewPage() {
             </Card>
           </div>
         </>
-      )}
+          );
+        })()}
     </div>
   );
 }

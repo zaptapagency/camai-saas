@@ -32,9 +32,11 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Callable, Optional
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, Header, HTTPException
 from pydantic import BaseModel, Field
 
+from app import audit
+from app.rbac import Role, require_role
 from app.fleet import (
     DesiredConfig,
     DesiredRelease,
@@ -258,11 +260,25 @@ def put_device_config(
     device_id: str,
     config: DesiredConfig,
     tenant_id: str,
+    role: Role = Depends(require_role(Role.admin)),
+    x_camai_actor: str = Header(default="unknown", alias="X-CamAI-Actor"),
 ) -> DesiredConfig:
     """Operator sets a device's desired config. ``config_version`` is assigned by
     the server (see :meth:`FleetStore.set_config`), so any value the caller sends is
-    ignored — the returned object carries the authoritative version."""
-    return _get_store().set_config(device_id, tenant_id, config)
+    ignored — the returned object carries the authoritative version.
+
+    Admin-gated and audited: a config push changes what a field device does, so it
+    is an operator mutation that must be authorized and recorded. The edge-facing
+    ``GET`` of this config is left open (outbound-only pull)."""
+    saved = _get_store().set_config(device_id, tenant_id, config)
+    audit.record(
+        actor=x_camai_actor,
+        action="fleet.config.push",
+        tenant_id=tenant_id,
+        resource=f"device:{device_id}:config",
+        meta={"role": role.value, "config_version": saved.config_version},
+    )
+    return saved
 
 
 @router.get("/v1/devices/{device_id}/release", response_model=DesiredRelease)

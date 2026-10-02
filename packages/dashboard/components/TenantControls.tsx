@@ -28,8 +28,30 @@ export function TenantControls() {
 
   const canSwitchTenant = can("manage:billing"); // admin-only in the stub model
 
+  // Preset demo accounts for one-click switching. `demo-tenant` is the seeded,
+  // all-verticals demo; the others show tenant isolation (empty until they report).
+  const ACCOUNTS = ["demo-tenant", "acme-foods", "northwind-retail"];
+
   return (
     <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
+      <label className="flex items-center gap-2 text-xs text-muted">
+        Account
+        <select
+          value={ACCOUNTS.includes(tenantId) ? tenantId : ""}
+          disabled={!canSwitchTenant}
+          onChange={(e) => e.target.value && setTenantId(e.target.value)}
+          className="rounded-lg border border-line bg-panel-2 px-2.5 py-1.5 text-sm text-fg disabled:opacity-60"
+          aria-label="Account (tenant) preset"
+        >
+          {!ACCOUNTS.includes(tenantId) && <option value="">{tenantId} (custom)</option>}
+          {ACCOUNTS.map((a) => (
+            <option key={a} value={a}>
+              {a}
+            </option>
+          ))}
+        </select>
+      </label>
+
       <label className="flex items-center gap-2 text-xs text-muted">
         Tenant
         <input

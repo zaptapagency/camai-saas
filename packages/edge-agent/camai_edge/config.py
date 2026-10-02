@@ -82,6 +82,14 @@ class CameraConfig(BaseModel):
     # Only detections above this confidence are tracked/counted.
     min_confidence: float = Field(default=0.35, ge=0, le=1)
 
+    # Proximity mode: a person and a forklift closer than this fraction of the frame
+    # diagonal raise a near-miss alert.
+    proximity_threshold: float = Field(default=0.15, gt=0, le=1)
+
+    # Thermal mode: a detection whose measured temperature (°C) meets or exceeds this
+    # raises an overheat alert.
+    temp_threshold_c: float = Field(default=38.0)
+
 
 class DetectorConfig(BaseModel):
     weights: str = "yolo11n.pt"  # nano baseline; swap for fine-tuned per-site weights
