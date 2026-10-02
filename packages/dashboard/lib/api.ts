@@ -156,6 +156,29 @@ export interface Usage {
   plan: string | null;
 }
 
+/** Metadata for the latest opt-in annotated snapshot of a camera. */
+export interface SnapshotMeta {
+  camera_id: string;
+  mode: string;
+  ts: string;
+  predicted_count: number;
+  labeled_count: number | null;
+}
+
+/** One row of the accuracy flywheel report, grouped by vertical/mode. */
+export interface AccuracyRow {
+  mode: string;
+  n: number;
+  mae: number;
+  mean_pct_error: number;
+}
+
+/** Aggregate predicted-vs-labeled accuracy for a tenant. */
+export interface Accuracy {
+  overall: { n: number; mae: number; mean_pct_error: number };
+  per_mode: AccuracyRow[];
+}
+
 // --- Client -----------------------------------------------------------------
 
 /**
@@ -209,6 +232,35 @@ async function getJson<T>(path: string, signal?: AbortSignal): Promise<T> {
   return (await res.json()) as T;
 }
 
+/** POST a JSON body and parse a JSON response, mirroring getJson's error handling. */
+async function postJson<T>(
+  path: string,
+  body: unknown,
+  signal?: AbortSignal,
+): Promise<T> {
+  const url = `${API_BASE}${path}`;
+  let res: Response;
+  try {
+    res = await fetch(url, {
+      method: "POST",
+      headers: {
+        Accept: "application/json",
+        "Content-Type": "application/json",
+        ...authHeaders(),
+      },
+      body: JSON.stringify(body),
+      signal,
+      cache: "no-store",
+    });
+  } catch (err) {
+    throw new ApiError(0, url, (err as Error).message || "network error");
+  }
+  if (!res.ok) {
+    throw new ApiError(res.status, url, `${res.status} ${res.statusText}`);
+  }
+  return (await res.json()) as T;
+}
+
 const enc = encodeURIComponent;
 
 export const api = {
@@ -226,6 +278,33 @@ export const api = {
 
   usage: (tenantId: string, signal?: AbortSignal) =>
     getJson<Usage>(`/v1/tenants/${enc(tenantId)}/usage`, signal),
+
+  /**
+   * Latest annotated-snapshot metadata for one camera. May 404 when the camera
+   * has no opt-in snapshot yet — callers treat the ApiError(404) as "no snapshot".
+   */
+  snapshotMeta: (tenantId: string, cameraId: string, signal?: AbortSignal) =>
+    getJson<SnapshotMeta>(
+      `/v1/tenants/${enc(tenantId)}/cameras/${enc(cameraId)}/snapshot`,
+      signal,
+    ),
+
+  accuracy: (tenantId: string, signal?: AbortSignal) =>
+    getJson<Accuracy>(`/v1/tenants/${enc(tenantId)}/accuracy`, signal),
+
+  /** Record a human-confirmed count for the camera's latest snapshot. */
+  label: (tenantId: string, cameraId: string, actual_count: number) =>
+    postJson<SnapshotMeta>(
+      `/v1/tenants/${enc(tenantId)}/cameras/${enc(cameraId)}/label`,
+      { actual_count },
+    ),
+
+  /**
+   * URL of the latest annotated JPEG for a camera. `bust` is a cache-busting
+   * number advanced on the poll cadence so the <img> re-fetches a fresh frame.
+   */
+  snapshotImageUrl: (tenantId: string, cameraId: string, bust: number) =>
+    `${API_BASE}/v1/tenants/${enc(tenantId)}/cameras/${enc(cameraId)}/snapshot.jpg?ts=${bust}`,
 };
 
 /** Shared React Query keys so polling and manual refetches stay in sync. */
@@ -235,4 +314,7 @@ export const queryKeys = {
     ["events", tenantId, limit] as const,
   devices: (tenantId: string) => ["devices", tenantId] as const,
   usage: (tenantId: string) => ["usage", tenantId] as const,
+  snapshot: (tenantId: string, cameraId: string) =>
+    ["snapshot", tenantId, cameraId] as const,
+  accuracy: (tenantId: string) => ["accuracy", tenantId] as const,
 };

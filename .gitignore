@@ -41,6 +41,12 @@ event-queue.db
 *.db
 *.log
 
+# Accuracy-flywheel runtime artifacts: captured frames + sidecars, fine-tune
+# datasets and training run outputs. Data/outputs, never source.
+capture/
+retrain_out/
+runs/
+
 # OS / editor
 .DS_Store
 Thumbs.db

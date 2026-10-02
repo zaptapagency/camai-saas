@@ -148,7 +148,7 @@ def main(argv: list[str] | None = None) -> int:
     pipelines = [
         CameraPipeline(
             cfg.tenant_id, cfg.site_id, cam, cfg.detector, queue, sync,
-            show=args.show, loop=args.loop,
+            show=args.show, loop=args.loop, ingest_url=cfg.cloud.ingest_url,
         )
         for cam in cameras
     ]

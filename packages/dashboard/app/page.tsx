@@ -15,7 +15,7 @@ import { ErrorState, LoadingState } from "@/components/StateMessage";
 import { LivePulse } from "@/components/TenantControls";
 import { Tile } from "@/components/Tile";
 import { duration, num } from "@/lib/format";
-import { useSummary } from "@/lib/queries";
+import { useAccuracy, useSummary } from "@/lib/queries";
 import { useTenant } from "@/lib/tenant";
 import { VERTICALS } from "@/lib/verticals";
 
@@ -80,6 +80,8 @@ export default function OverviewPage() {
             />
           </div>
 
+          <AccuracyCard />
+
           <section className="space-y-3">
             <h2 className="text-sm font-semibold text-muted">
               Verticals · live across the fleet
@@ -118,5 +120,63 @@ export default function OverviewPage() {
           );
         })()}
     </div>
+  );
+}
+
+/**
+ * Model-accuracy summary — the read side of the label flywheel. Unobtrusive: a
+ * single row of small figures plus a per-mode breakdown. Shows a nudge toward
+ * the camera label forms when no counts have been confirmed yet.
+ */
+function AccuracyCard() {
+  const { data } = useAccuracy();
+  const overall = data?.overall;
+
+  return (
+    <Card title="Model accuracy">
+      {!overall || overall.n === 0 ? (
+        <p className="text-sm text-muted">
+          No labels yet — confirm counts on the Cameras pages to start the
+          flywheel.
+        </p>
+      ) : (
+        <div className="space-y-3">
+          <div className="flex flex-wrap gap-x-8 gap-y-2 text-sm">
+            <span className="text-muted">
+              Samples{" "}
+              <span className="tabular-nums text-fg">{num(overall.n)}</span>
+            </span>
+            <span className="text-muted">
+              MAE{" "}
+              <span className="tabular-nums text-fg">
+                {overall.mae.toFixed(2)}
+              </span>
+            </span>
+            <span className="text-muted">
+              Mean % error{" "}
+              <span className="tabular-nums text-fg">
+                {overall.mean_pct_error.toFixed(1)}%
+              </span>
+            </span>
+          </div>
+          {data && data.per_mode.length > 0 && (
+            <div>
+              {data.per_mode.map((r) => (
+                <div
+                  key={r.mode}
+                  className="flex items-center justify-between border-b border-line py-1 text-[13px] last:border-b-0"
+                >
+                  <span className="text-muted">{r.mode}</span>
+                  <span className="tabular-nums text-muted">
+                    n {num(r.n)} · MAE {r.mae.toFixed(2)} ·{" "}
+                    {r.mean_pct_error.toFixed(1)}%
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+    </Card>
   );
 }

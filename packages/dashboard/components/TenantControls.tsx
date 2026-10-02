@@ -30,7 +30,20 @@ export function TenantControls() {
 
   // Preset demo accounts for one-click switching. `demo-tenant` is the seeded,
   // all-verticals demo; the others show tenant isolation (empty until they report).
-  const ACCOUNTS = ["demo-tenant", "acme-foods", "northwind-retail"];
+  const ACCOUNTS = [
+    "demo-tenant",
+    "acme-foods",
+    "demo-retail",
+    "demo-queue",
+    "demo-capacity",
+    "demo-staffing",
+    "demo-safety",
+    "demo-traffic",
+    "demo-parking",
+    "demo-fire",
+    "demo-thermal",
+    "demo-proximity",
+  ];
 
   return (
     <div className="flex flex-wrap items-center gap-x-5 gap-y-2">

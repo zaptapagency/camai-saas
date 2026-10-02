@@ -16,6 +16,9 @@ cloud:
   flush_interval_seconds: 5
   heartbeat_interval_seconds: 15
 
+# Opt-in annotated snapshots → live view + labelling for the accuracy flywheel.
+# (Applies per camera below via snapshot_seconds.)
+
 cameras:
   # Retail entrance: a horizontal line across the middle. People crossing it
   # count as entry/exit; a zone gives browse-dwell.
@@ -24,6 +27,8 @@ cameras:
     mode: retail
     target_fps: 6
     min_confidence: 0.35
+    snapshot_seconds: 3
+    capture_dir: "capture"
     lines:
       - id: entrance
         # Vertical line down the middle — people walking across the frame cross it.
@@ -45,6 +50,8 @@ cameras:
     mode: capacity
     target_fps: 6
     min_confidence: 0.35
+    snapshot_seconds: 3
+    capture_dir: "capture"
     zones:
       - id: main-floor
         capacity: 0
