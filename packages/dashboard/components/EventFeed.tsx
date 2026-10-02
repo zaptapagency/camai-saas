@@ -11,7 +11,7 @@ import type { CamEvent, EventType } from "@/lib/api";
 import { timeAgo } from "@/lib/format";
 import { EmptyState } from "./StateMessage";
 
-const TYPE_TONE: Record<EventType, string> = {
+const TYPE_TONE: Partial<Record<EventType, string>> = {
   entry: "text-ok",
   exit: "text-warn",
   occupancy_sample: "text-accent",
@@ -19,9 +19,16 @@ const TYPE_TONE: Record<EventType, string> = {
   vehicle_left: "text-ok",
   count_delta: "text-accent",
   dwell: "text-muted",
+  ppe_violation: "text-warn",
+  vehicle_crossing: "text-accent",
+  capacity_breach: "text-bad",
+  proximity_alert: "text-bad",
+  hazard_alert: "text-bad",
+  overheat_alert: "text-bad",
 };
 
 function payloadLabel(e: CamEvent): string {
+  if (e.labels && e.labels.length) return e.labels.join(", ");
   if (e.count != null) return `count ${e.count}`;
   if (e.delta != null) return `Δ ${e.delta > 0 ? "+" : ""}${e.delta}`;
   if (e.dwell_seconds != null) return `dwell ${e.dwell_seconds.toFixed(0)}s`;

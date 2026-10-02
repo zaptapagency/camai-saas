@@ -20,6 +20,9 @@ interface NavItem {
 
 const NAV_ITEMS: NavItem[] = [
   { href: "/", label: "Overview", cap: "view:dashboard" },
+  { href: "/verticals", label: "Verticals", cap: "view:dashboard" },
+  { href: "/cameras", label: "Cameras", cap: "view:dashboard" },
+  { href: "/alerts", label: "Alerts", cap: "view:dashboard" },
   { href: "/devices", label: "Devices", cap: "view:devices" },
   { href: "/usage", label: "Usage", cap: "view:usage" },
 ];

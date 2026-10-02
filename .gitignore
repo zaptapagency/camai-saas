@@ -29,7 +29,11 @@ dist/
 .env.*
 *.pem
 *.key
+*.crt
+*.csr
 device-cert*
+# Per-device mTLS identity minted on first boot (key/cert/csr) — never commit.
+device/
 
 # Local edge state / runtime DBs (SQLite dev stores, queues, registries)
 event-queue.db
