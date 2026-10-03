@@ -3,6 +3,9 @@
 Maps the [plan](PLAN.md) to concrete engineering work. This tracks *what's built in
 this repo*, not the go-to-market timeline.
 
+The **accuracy flywheel** (live snapshots → labelling → measured accuracy →
+count-gated retrain → promote) has its own guide: [docs/flywheel.md](flywheel.md).
+
 ## ✅ Done (foundation)
 
 - **Shared event contract** (`packages/schema`) — `Event`, `EventBatch`,
