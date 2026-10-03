@@ -19,7 +19,7 @@ export interface VerticalDef {
   sub?: (t: SummaryTotals) => string;
 }
 
-export const GROUPS = ["Front of house", "Kitchen & safety", "Fleet & outside"] as const;
+export const GROUPS = ["Front of house", "Kitchen & safety", "Fleet & outside", "Security"] as const;
 
 export const VERTICALS: VerticalDef[] = [
   {
@@ -81,6 +81,36 @@ export const VERTICALS: VerticalDef[] = [
     tier: "Tier 2", tone: "bad",
     value: (t) => `${num(t.proximity_alerts)} near-misses`,
     sub: () => "forklift ↔ pedestrian",
+  },
+  {
+    key: "drive_thru", name: "Drive-thru timing", group: "Fleet & outside",
+    tier: "Tier 1", tone: "accent",
+    value: (t) => duration(t.avg_service_seconds),
+    sub: (t) => (t.service_samples ? `${num(t.service_samples)} vehicles` : "avg service time"),
+  },
+  {
+    key: "crowd_density", name: "Crowd density", group: "Front of house",
+    tier: "Tier 1", tone: "bad",
+    value: (t) => `${num(t.crowd_alerts)} crush alerts`,
+    sub: () => "headcount vs crush threshold",
+  },
+  {
+    key: "loitering", name: "Loitering", group: "Security",
+    tier: "Tier 1", tone: "warn",
+    value: (t) => `${num(t.loitering_alerts)} alerts`,
+    sub: () => "prolonged presence in a zone",
+  },
+  {
+    key: "intrusion", name: "Intrusion", group: "Security",
+    tier: "Tier 1", tone: "bad",
+    value: (t) => `${num(t.intrusion_alerts)} alerts`,
+    sub: () => "restricted / after-hours zone",
+  },
+  {
+    key: "tailgating", name: "Tailgating", group: "Security",
+    tier: "Tier 1", tone: "warn",
+    value: (t) => `${num(t.tailgating_alerts)} alerts`,
+    sub: () => "piggybacking a secure line",
   },
 ];
 

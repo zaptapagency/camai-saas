@@ -47,6 +47,11 @@ class Mode(str, Enum):
     proximity = "proximity"  # Tier 2: forklift<->pedestrian near-miss (needs a forklift class)
     fire = "fire"            # Tier 3: fire/smoke detection (needs a fire/smoke-trained model)
     thermal = "thermal"      # Tier 4: thermal fever/overheat screening (needs a thermal camera)
+    drive_thru = "drive_thru"        # Tier 1: vehicle service-time per lane (dwell)
+    loitering = "loitering"          # Tier 1: prolonged person presence in a zone
+    intrusion = "intrusion"          # Tier 1: person in a restricted / after-hours zone
+    crowd_density = "crowd_density"  # Tier 1: crowd headcount vs a crush-risk threshold
+    tailgating = "tailgating"        # Tier 1: multiple people through a secure line together
 
 
 class EventType(str, Enum):
@@ -65,6 +70,10 @@ class EventType(str, Enum):
     proximity_alert = "proximity_alert"    # proximity: a person and a forklift came within the danger distance
     hazard_alert = "hazard_alert"          # fire: fire/smoke appeared (hazard type in labels)
     overheat_alert = "overheat_alert"      # thermal: an object/person exceeded the temperature threshold
+    loitering_alert = "loitering_alert"    # loitering: a person dwelled in a zone past the threshold
+    intrusion_alert = "intrusion_alert"    # intrusion: a person entered a restricted/after-hours zone
+    crowd_alert = "crowd_alert"            # crowd_density: headcount crossed the crush-risk threshold
+    tailgating_alert = "tailgating_alert"  # tailgating: multiple people crossed a secure line together
 
 
 class ObjectClass(str, Enum):
