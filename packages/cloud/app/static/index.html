@@ -142,7 +142,12 @@ function renderTiles(t) {
     tile("Capacity breaches", t.capacity_breaches ?? 0) +
     tile("Proximity alerts", t.proximity_alerts ?? 0) +
     tile("Fire / smoke alerts", t.hazard_alerts ?? 0) +
-    tile("Overheat alerts", t.overheat_alerts ?? 0);
+    tile("Overheat alerts", t.overheat_alerts ?? 0) +
+    tile("Drive-thru service" + (t.service_samples ? ` (${t.service_samples})` : ""), fmtWait(t.avg_service_seconds)) +
+    tile("Loitering alerts", t.loitering_alerts ?? 0) +
+    tile("Intrusion alerts", t.intrusion_alerts ?? 0) +
+    tile("Crowd alerts", t.crowd_alerts ?? 0) +
+    tile("Tailgating alerts", t.tailgating_alerts ?? 0);
   if (t.stations_total) {
     html += tile("Stations unstaffed",
       `${t.stations_unstaffed}<span class="unit">/${t.stations_total}</span>`);
