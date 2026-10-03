@@ -63,6 +63,10 @@ tiles, a per-zone occupancy chart, parking states, device health, and an event f
 > copy-paste sequence for cloud + dashboard, an edge agent on a camera,
 > calibration, identity/fleet, billing, and the Postgres path.
 
+> **How accuracy improves over time?** See [docs/flywheel.md](docs/flywheel.md) —
+> the live-camera → label → measured-accuracy → retrain → promote loop (opt-in,
+> privacy-first), and how to run `camai-retrain`.
+
 ## Quick start (edge pipeline against a video file)
 
 No camera or GPU required to try it — a CPU and any video file work (slower FPS).
