@@ -146,6 +146,18 @@ class Store:
             overheat_alerts = _scalar(cur.execute(
                 "SELECT COUNT(*) FROM events WHERE tenant_id=? AND type='overheat_alert'",
                 (tenant_id,)))
+            loitering_alerts = _scalar(cur.execute(
+                "SELECT COUNT(*) FROM events WHERE tenant_id=? AND type='loitering_alert'",
+                (tenant_id,)))
+            intrusion_alerts = _scalar(cur.execute(
+                "SELECT COUNT(*) FROM events WHERE tenant_id=? AND type='intrusion_alert'",
+                (tenant_id,)))
+            crowd_alerts = _scalar(cur.execute(
+                "SELECT COUNT(*) FROM events WHERE tenant_id=? AND type='crowd_alert'",
+                (tenant_id,)))
+            tailgating_alerts = _scalar(cur.execute(
+                "SELECT COUNT(*) FROM events WHERE tenant_id=? AND type='tailgating_alert'",
+                (tenant_id,)))
 
             # Latest occupancy sample per (camera, zone). SQLite returns the row
             # matching MAX(ts) for the other selected columns.
@@ -222,6 +234,8 @@ class Store:
         avg_wait = round(sum(waits) / len(waits), 1) if waits else None
         browses = [r[1] for r in dwell_rows if r[0] == "retail" and r[1] is not None]
         avg_browse = round(sum(browses) / len(browses), 1) if browses else None
+        services = [r[1] for r in dwell_rows if r[0] == "drive_thru" and r[1] is not None]
+        avg_service = round(sum(services) / len(services), 1) if services else None
 
         stations_total = len(staffing_rows)
         stations_unstaffed = sum(1 for r in staffing_rows if (r[2] or 0) == 0)
@@ -248,6 +262,12 @@ class Store:
                 "proximity_alerts": proximity_alerts,
                 "hazard_alerts": hazard_alerts,
                 "overheat_alerts": overheat_alerts,
+                "loitering_alerts": loitering_alerts,
+                "intrusion_alerts": intrusion_alerts,
+                "crowd_alerts": crowd_alerts,
+                "tailgating_alerts": tailgating_alerts,
+                "avg_service_seconds": avg_service,
+                "service_samples": len(services),
                 "stations_total": stations_total,
                 "stations_unstaffed": stations_unstaffed,
                 "stations_active": stations_active,

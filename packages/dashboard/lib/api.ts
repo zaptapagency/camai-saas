@@ -25,7 +25,12 @@ export type Mode =
   | "capacity"
   | "proximity"
   | "fire"
-  | "thermal";
+  | "thermal"
+  | "drive_thru"
+  | "loitering"
+  | "intrusion"
+  | "crowd_density"
+  | "tailgating";
 
 export type EventType =
   | "entry"
@@ -40,7 +45,11 @@ export type EventType =
   | "capacity_breach"
   | "proximity_alert"
   | "hazard_alert"
-  | "overheat_alert";
+  | "overheat_alert"
+  | "loitering_alert"
+  | "intrusion_alert"
+  | "crowd_alert"
+  | "tailgating_alert";
 
 export type ObjectClass =
   | "person"
@@ -122,6 +131,17 @@ export interface SummaryTotals {
   hazard_alerts?: number;
   /** Thermal mode (Tier 4): overheat/fever alerts. */
   overheat_alerts?: number;
+  /** Loitering mode (Tier 1): prolonged-presence alerts. */
+  loitering_alerts?: number;
+  /** Intrusion mode (Tier 1): restricted/after-hours presence alerts. */
+  intrusion_alerts?: number;
+  /** Crowd-density mode (Tier 1): crush-risk threshold alerts. */
+  crowd_alerts?: number;
+  /** Tailgating mode (Tier 1): piggyback line-crossing alerts. */
+  tailgating_alerts?: number;
+  /** Drive-thru mode (Tier 1): average vehicle service time (dwell). */
+  avg_service_seconds?: number | null;
+  service_samples?: number;
 }
 
 export interface OccupancySample {

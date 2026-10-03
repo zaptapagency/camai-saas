@@ -11,7 +11,12 @@ from camai_schema import Mode
 from camai_edge.config import CameraConfig
 from camai_edge.counting.base import BaseCounter
 from camai_edge.counting.capacity import CapacityCounter
+from camai_edge.counting.crowd_density import CrowdDensityCounter
+from camai_edge.counting.drive_thru import DriveThruCounter
 from camai_edge.counting.fire import FireCounter
+from camai_edge.counting.intrusion import IntrusionCounter
+from camai_edge.counting.loitering import LoiteringCounter
+from camai_edge.counting.tailgating import TailgatingCounter
 from camai_edge.counting.line_crossing import LineCrossingCounter
 from camai_edge.counting.proximity import ProximityCounter
 from camai_edge.counting.queue import QueueCounter
@@ -44,6 +49,16 @@ def make_counter(tenant_id: str, site_id: str, camera: CameraConfig) -> BaseCoun
         return FireCounter(tenant_id, site_id, camera)
     if mode == Mode.thermal:
         return ThermalCounter(tenant_id, site_id, camera)
+    if mode == Mode.drive_thru:
+        return DriveThruCounter(tenant_id, site_id, camera)
+    if mode == Mode.loitering:
+        return LoiteringCounter(tenant_id, site_id, camera)
+    if mode == Mode.intrusion:
+        return IntrusionCounter(tenant_id, site_id, camera)
+    if mode == Mode.crowd_density:
+        return CrowdDensityCounter(tenant_id, site_id, camera)
+    if mode == Mode.tailgating:
+        return TailgatingCounter(tenant_id, site_id, camera)
     raise ValueError(f"unsupported mode: {mode}")
 
 

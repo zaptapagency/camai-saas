@@ -48,6 +48,9 @@ capture/
 retrain_out/
 runs/
 
+# Demo configs containing time-signed live-stream URLs (generated at runtime).
+packages/edge-agent/demo-live*.yaml
+
 # OS / editor
 .DS_Store
 Thumbs.db
