@@ -1,0 +1,60 @@
+# Render blueprint — deploy the CamAI control plane (cloud API + dashboard +
+# managed Postgres) from this repo. In Render: New > Blueprint, point it at the
+# repo, set the sync:false secrets, Apply. https://render.com/docs/blueprint-spec
+databases:
+  - name: camai-db
+    plan: starter
+    postgresMajorVersion: "16"
+
+services:
+  - type: web
+    name: camai-cloud
+    runtime: docker
+    dockerfilePath: packages/cloud/Dockerfile
+    dockerContext: .
+    plan: starter
+    healthCheckPath: /health
+    envVars:
+      - key: CAMAI_STORE
+        value: postgres
+      - key: CAMAI_PG_DSN
+        fromDatabase:
+          name: camai-db
+          property: connectionString
+      - key: CAMAI_SNAPSHOT_DIR
+        value: /data/snaps
+      - key: CAMAI_SNAPSHOT_DB
+        value: /data/snaps.db
+      - key: CAMAI_REQUIRE_MTLS
+        value: "0"
+      - key: STRIPE_API_KEY
+        sync: false
+    disk:
+      name: camai-cloud-data
+      mountPath: /data
+      sizeGB: 1
+
+  - type: web
+    name: camai-dashboard
+    runtime: docker
+    dockerfilePath: packages/dashboard/Dockerfile
+    dockerContext: .
+    plan: starter
+    envVars:
+      # Build-time: the /v1/* proxy destination (the cloud service's URL).
+      - key: CAMAI_API_ORIGIN
+        fromService:
+          name: camai-cloud
+          type: web
+          property: host
+      - key: NEXTAUTH_URL
+        fromService:
+          name: camai-dashboard
+          type: web
+          property: host
+      - key: NEXTAUTH_SECRET
+        generateValue: true
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false

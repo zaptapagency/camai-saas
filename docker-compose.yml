@@ -1,0 +1,69 @@
+# CamAI control plane — one-command deploy (cloud API + dashboard, optional
+# TimescaleDB). Works on a laptop or any Docker host / VPS.
+#
+#   cp .env.example .env   # fill in NEXTAUTH_SECRET etc.
+#   docker compose up -d --build
+#   # dashboard -> http://localhost:3000   cloud API -> http://localhost:8000
+#
+# Defaults to the SQLite dev store so it runs out of the box. For production,
+# uncomment the `db` service + the Postgres env on `cloud` and run migrations
+# (see DEPLOY.md). Secrets come from .env — never commit real values.
+
+services:
+  cloud:
+    build:
+      context: .
+      dockerfile: packages/cloud/Dockerfile
+    environment:
+      CAMAI_STORE: ${CAMAI_STORE:-sqlite}
+      # CAMAI_PG_DSN: postgresql://camai:${POSTGRES_PASSWORD}@db:5432/camai
+      CAMAI_SNAPSHOT_DIR: /data/snaps
+      CAMAI_SNAPSHOT_DB: /data/snaps.db
+      # Enforce cert identity on ingest behind a TLS-terminating proxy in prod:
+      CAMAI_REQUIRE_MTLS: ${CAMAI_REQUIRE_MTLS:-0}
+      STRIPE_API_KEY: ${STRIPE_API_KEY:-}
+    volumes:
+      - cloud_data:/data
+    ports:
+      - "8000:8000"
+    restart: unless-stopped
+    # depends_on: { db: { condition: service_healthy } }   # when using Postgres
+
+  dashboard:
+    build:
+      context: .
+      dockerfile: packages/dashboard/Dockerfile
+      args:
+        # Build-time: Next bakes the /v1/* proxy destination. Inside compose the
+        # cloud service is reachable as http://cloud:8000.
+        CAMAI_API_ORIGIN: http://cloud:8000
+    environment:
+      CAMAI_API_ORIGIN: http://cloud:8000
+      NEXTAUTH_SECRET: ${NEXTAUTH_SECRET:?set NEXTAUTH_SECRET in .env}
+      NEXTAUTH_URL: ${NEXTAUTH_URL:-http://localhost:3000}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+    ports:
+      - "3000:3000"
+    depends_on:
+      - cloud
+    restart: unless-stopped
+
+  # --- Production database (uncomment + switch CAMAI_STORE=postgres) ----------
+  # db:
+  #   image: timescale/timescaledb:latest-pg16
+  #   environment:
+  #     POSTGRES_USER: camai
+  #     POSTGRES_DB: camai
+  #     POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+  #   volumes:
+  #     - pgdata:/var/lib/postgresql/data
+  #   healthcheck:
+  #     test: ["CMD-SHELL", "pg_isready -U camai"]
+  #     interval: 5s
+  #     timeout: 3s
+  #     retries: 10
+
+volumes:
+  cloud_data:
+  # pgdata:
