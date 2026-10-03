@@ -147,7 +147,11 @@ function renderTiles(t) {
     tile("Loitering alerts", t.loitering_alerts ?? 0) +
     tile("Intrusion alerts", t.intrusion_alerts ?? 0) +
     tile("Crowd alerts", t.crowd_alerts ?? 0) +
-    tile("Tailgating alerts", t.tailgating_alerts ?? 0);
+    tile("Tailgating alerts", t.tailgating_alerts ?? 0) +
+    tile("Fall / slip alerts", t.fall_alerts ?? 0) +
+    tile("Weapon alerts", t.weapon_alerts ?? 0) +
+    tile("Abandoned object", t.abandoned_object_alerts ?? 0) +
+    tile("Wrong-way alerts", t.wrong_way_alerts ?? 0);
   if (t.stations_total) {
     html += tile("Stations unstaffed",
       `${t.stations_unstaffed}<span class="unit">/${t.stations_total}</span>`);

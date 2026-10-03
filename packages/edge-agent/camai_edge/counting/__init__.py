@@ -9,14 +9,18 @@ from __future__ import annotations
 from camai_schema import Mode
 
 from camai_edge.config import CameraConfig
+from camai_edge.counting.abandoned_object import AbandonedObjectCounter
 from camai_edge.counting.base import BaseCounter
 from camai_edge.counting.capacity import CapacityCounter
 from camai_edge.counting.crowd_density import CrowdDensityCounter
 from camai_edge.counting.drive_thru import DriveThruCounter
+from camai_edge.counting.fall import FallCounter
 from camai_edge.counting.fire import FireCounter
 from camai_edge.counting.intrusion import IntrusionCounter
 from camai_edge.counting.loitering import LoiteringCounter
 from camai_edge.counting.tailgating import TailgatingCounter
+from camai_edge.counting.weapon import WeaponCounter
+from camai_edge.counting.wrong_way import WrongWayCounter
 from camai_edge.counting.line_crossing import LineCrossingCounter
 from camai_edge.counting.proximity import ProximityCounter
 from camai_edge.counting.queue import QueueCounter
@@ -59,6 +63,14 @@ def make_counter(tenant_id: str, site_id: str, camera: CameraConfig) -> BaseCoun
         return CrowdDensityCounter(tenant_id, site_id, camera)
     if mode == Mode.tailgating:
         return TailgatingCounter(tenant_id, site_id, camera)
+    if mode == Mode.fall:
+        return FallCounter(tenant_id, site_id, camera)
+    if mode == Mode.weapon:
+        return WeaponCounter(tenant_id, site_id, camera)
+    if mode == Mode.abandoned_object:
+        return AbandonedObjectCounter(tenant_id, site_id, camera)
+    if mode == Mode.wrong_way:
+        return WrongWayCounter(tenant_id, site_id, camera)
     raise ValueError(f"unsupported mode: {mode}")
 
 

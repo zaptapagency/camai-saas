@@ -52,6 +52,10 @@ class Mode(str, Enum):
     intrusion = "intrusion"          # Tier 1: person in a restricted / after-hours zone
     crowd_density = "crowd_density"  # Tier 1: crowd headcount vs a crush-risk threshold
     tailgating = "tailgating"        # Tier 1: multiple people through a secure line together
+    fall = "fall"                    # Tier 2: a person collapsed (fall/slip) — pose/aspect heuristic
+    weapon = "weapon"                # Tier 3: a weapon (gun/knife) appeared (needs a weapon-trained model)
+    abandoned_object = "abandoned_object"  # Tier 2: an unattended bag/object left static in a zone
+    wrong_way = "wrong_way"          # Tier 1: a vehicle travelled against the allowed direction
 
 
 class EventType(str, Enum):
@@ -74,6 +78,10 @@ class EventType(str, Enum):
     intrusion_alert = "intrusion_alert"    # intrusion: a person entered a restricted/after-hours zone
     crowd_alert = "crowd_alert"            # crowd_density: headcount crossed the crush-risk threshold
     tailgating_alert = "tailgating_alert"  # tailgating: multiple people crossed a secure line together
+    fall_alert = "fall_alert"              # fall: a tracked person collapsed and stayed down past the confirm window
+    weapon_alert = "weapon_alert"          # weapon: a weapon appeared in a scope (weapon type in labels)
+    abandoned_object_alert = "abandoned_object_alert"  # abandoned_object: an object sat unattended past the threshold
+    wrong_way_alert = "wrong_way_alert"    # wrong_way: a vehicle crossed a line against the allowed direction
 
 
 class ObjectClass(str, Enum):
@@ -96,6 +104,12 @@ class ObjectClass(str, Enum):
     vest = "vest"
     no_helmet = "no_helmet"
     no_vest = "no_vest"
+    # Weapon classes (from a weapon-trained detector; COCO does not provide these).
+    weapon = "weapon"
+    gun = "gun"
+    knife = "knife"
+    # Unattended-object classes (COCO has bag types; map them via a detector class_map).
+    bag = "bag"
     other = "other"
 
 

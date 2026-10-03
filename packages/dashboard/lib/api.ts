@@ -30,7 +30,11 @@ export type Mode =
   | "loitering"
   | "intrusion"
   | "crowd_density"
-  | "tailgating";
+  | "tailgating"
+  | "fall"
+  | "weapon"
+  | "abandoned_object"
+  | "wrong_way";
 
 export type EventType =
   | "entry"
@@ -49,7 +53,11 @@ export type EventType =
   | "loitering_alert"
   | "intrusion_alert"
   | "crowd_alert"
-  | "tailgating_alert";
+  | "tailgating_alert"
+  | "fall_alert"
+  | "weapon_alert"
+  | "abandoned_object_alert"
+  | "wrong_way_alert";
 
 export type ObjectClass =
   | "person"
@@ -58,6 +66,10 @@ export type ObjectClass =
   | "pallet"
   | "fire"
   | "smoke"
+  | "weapon"
+  | "gun"
+  | "knife"
+  | "bag"
   | "other";
 
 /** A single analytics event (camai_schema.Event). */
@@ -139,6 +151,14 @@ export interface SummaryTotals {
   crowd_alerts?: number;
   /** Tailgating mode (Tier 1): piggyback line-crossing alerts. */
   tailgating_alerts?: number;
+  /** Fall mode (Tier 2): person-collapse alerts. */
+  fall_alerts?: number;
+  /** Weapon mode (Tier 3): gun/knife detection alerts. */
+  weapon_alerts?: number;
+  /** Abandoned-object mode (Tier 2): unattended-object alerts. */
+  abandoned_object_alerts?: number;
+  /** Wrong-way mode (Tier 1): against-the-flow vehicle alerts. */
+  wrong_way_alerts?: number;
   /** Drive-thru mode (Tier 1): average vehicle service time (dwell). */
   avg_service_seconds?: number | null;
   service_samples?: number;
