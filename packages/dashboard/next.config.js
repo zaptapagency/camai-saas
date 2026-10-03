@@ -7,6 +7,8 @@ const API_ORIGIN = process.env.CAMAI_API_ORIGIN || "http://localhost:8000";
 
 const nextConfig = {
   reactStrictMode: true,
+  // Lean container output (server.js + minimal node_modules) for the Docker image.
+  output: "standalone",
   async rewrites() {
     return [
       { source: "/v1/:path*", destination: `${API_ORIGIN}/v1/:path*` },
