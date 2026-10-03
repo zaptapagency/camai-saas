@@ -123,6 +123,37 @@ for i in range(6):
     ev("cam-bay", EventType.count_delta, Mode.warehouse, 800 - i*90,
        zone_id="bay-A", delta=random.choice([-2, -1, 1, 1, 2]))
 
+# --- DRIVE-THRU: vehicle service time (Tier 1) -------------------------------
+for i in range(10):
+    ev("cam-drivethru", EventType.dwell, Mode.drive_thru, 300 - i*22, zone_id="lane",
+       dwell_seconds=round(random.uniform(90, 330), 1),
+       object_class=ObjectClass.vehicle, track_id=600 + i)
+for t in range(0, 180, 20):
+    ev("cam-drivethru", EventType.occupancy_sample, Mode.drive_thru, t,
+       zone_id="lane", count=random.randint(1, 4))
+
+# --- LOITERING (Tier 1) ------------------------------------------------------
+for i in range(4):
+    ev("cam-plaza", EventType.loitering_alert, Mode.loitering, 500 - i*90,
+       zone_id="plaza", track_id=700 + i, count=1, labels=[f"{random.randint(30, 120)}s"])
+
+# --- INTRUSION (Tier 1) ------------------------------------------------------
+for i in range(3):
+    ev("cam-perimeter", EventType.intrusion_alert, Mode.intrusion, 450 - i*100,
+       zone_id="restricted", track_id=800 + i, count=1)
+
+# --- CROWD DENSITY (Tier 1) --------------------------------------------------
+for i in range(3):
+    ev("cam-atrium", EventType.crowd_alert, Mode.crowd_density, 400 - i*110,
+       zone_id="atrium", count=random.randint(30, 45), labels=["threshold:25"])
+ev("cam-atrium", EventType.occupancy_sample, Mode.crowd_density, 20,
+   zone_id="atrium", count=32, labels=["over"])
+
+# --- TAILGATING (Tier 1) -----------------------------------------------------
+for i in range(4):
+    ev("cam-securedoor", EventType.tailgating_alert, Mode.tailgating, 500 - i*80,
+       line_id="door", count=2, labels=["2_together"])
+
 # ---- send events in batches -------------------------------------------------
 BATCH = 50
 sent = 0
@@ -134,7 +165,8 @@ for i in range(0, len(events), BATCH):
 
 # ---- device heartbeats so Device Health populates ---------------------------
 cams = ["cam-entrance", "cam-lot", "cam-checkout", "cam-kitchen", "cam-dock",
-        "cam-street", "cam-hall", "cam-warehouse", "cam-cookline", "cam-walkin", "cam-bay"]
+        "cam-street", "cam-hall", "cam-warehouse", "cam-cookline", "cam-walkin", "cam-bay",
+        "cam-drivethru", "cam-plaza", "cam-perimeter", "cam-atrium", "cam-securedoor"]
 for n, cam in enumerate(cams):
     hb = Heartbeat(device_id=f"edge-{cam}", tenant_id=TENANT,
                    agent_version="0.1.0", uptime_seconds=random.uniform(3600, 90000),
