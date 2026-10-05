@@ -132,24 +132,42 @@ highway cam (tracking with persistent IDs) before any private deployment.
 
 ## Live 3-hour demo (all verticals)
 
-A shareable, time-boxed demo of every vertical at once, for prospects:
+A time-boxed demo of every vertical at once. It runs wherever the control plane
+runs — no hosting required: bring it up **locally on demand** for a live/screen-shared
+demo, or point it at a deployment if you have one (see [DEPLOY.md](DEPLOY.md)).
 
-1. **Seed the master demo tenant** (cloud must be up on :8000):
-   ```bash
-   PYTHONPATH=packages/schema python tools/seed_demo_account.py demo-master
-   ```
-2. **(Optional) point live public cameras at the person/vehicle verticals** — copy
-   `tools/demo_master_cams.example.yaml`, drop in current live-cam URLs, then
-   resolve them into an edge config (re-run with `--watch 2700` so HLS URLs stay fresh):
-   ```bash
-   python tools/resolve_streams.py --spec tools/demo_master_cams.example.yaml
-   camai-edge --config packages/edge-agent/demo-master.yaml
-   ```
-3. **Hand out the demo** — the landing page (`docs/index.html`, served via GitHub
-   Pages) has a **Launch 3-hour live demo** button. It calls `POST /v1/demo/start`,
-   gets a token scoped to `demo-master`, and opens the dashboard at `/?demo=<token>`.
-   The dashboard locks to the demo tenant, shows a live countdown banner, and flips
-   to a "demo ended" screen when the 3-hour window (`CAMAI_DEMO_HOURS`) closes.
+### Run it locally, on demand
+
+From the repo root, with Docker:
+
+```bash
+cp .env.example .env            # set NEXTAUTH_SECRET: openssl rand -base64 32
+docker compose up -d --build    # cloud API :8000 + dashboard :3000
+PYTHONPATH=packages/schema python tools/generate_demo_fleet.py --count 100
+```
+
+(or, without Docker: run the two servers from `.claude/launch.json` / `DEPLOY.md`,
+then the same seed command). Then open **http://localhost:3000/demo** — it mints a
+3-hour session and drops into the dashboard pinned to `demo-master`, with a live
+countdown and all 100 cameras across every vertical. Re-run the seed command to
+reset the fleet. `tools/seed_demo_account.py demo-master` is a lighter 20-camera
+seed (with annotated snapshots) if you prefer.
+
+### Optional: real live video on the runnable verticals
+
+Point live **public** cameras at the person/vehicle verticals (the model-gated ones
+stay simulated). Fill `tools/public_cams.example.yaml` with current cam URLs, then:
+
+```bash
+PYTHONPATH=packages/schema python tools/generate_demo_fleet.py --no-seed  # writes the cam spec
+python tools/resolve_streams.py --spec packages/edge-agent/demo-master-fleet.cams.yaml --watch 2700
+camai-edge --config packages/edge-agent/demo-master.yaml
+```
+
+`--watch 2700` re-resolves the HLS URLs every 45 min so a 3-hour session doesn't
+go dark. The **Launch 3-hour live demo** button on the GitHub Pages landing page
+(`docs/index.html`) links to `<dashboardUrl>/demo` (localhost by default — set it in
+`docs/config.js`), so the same button works while you're running locally.
 
 The **Live** verticals (retail, queue, capacity, crowd, staffing, parking, traffic,
 drive-thru, loitering, intrusion, tailgating, wrong-way, fall) run real detection on
