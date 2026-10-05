@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 
 import "./globals.css";
 import { Providers } from "./providers";
+import { DemoBanner } from "@/components/DemoBanner";
 import { Nav } from "@/components/Nav";
 
 export const metadata: Metadata = {
@@ -15,6 +16,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
     <html lang="en">
       <body className="min-h-screen bg-bg text-fg">
         <Providers>
+          <DemoBanner />
           <Nav />
           <main className="mx-auto max-w-[1200px] px-4 py-6 sm:px-5">
             {children}

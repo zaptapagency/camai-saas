@@ -112,6 +112,30 @@ export const VERTICALS: VerticalDef[] = [
     value: (t) => `${num(t.tailgating_alerts)} alerts`,
     sub: () => "piggybacking a secure line",
   },
+  {
+    key: "fall", name: "Fall / slip", group: "Kitchen & safety",
+    tier: "Tier 2", tone: "bad",
+    value: (t) => `${num(t.fall_alerts)} alerts`,
+    sub: () => "person collapsed on the floor",
+  },
+  {
+    key: "weapon", name: "Weapon", group: "Security",
+    tier: "Tier 3", tone: "bad",
+    value: (t) => `${num(t.weapon_alerts)} alerts`,
+    sub: () => "needs a weapon-trained model",
+  },
+  {
+    key: "abandoned_object", name: "Abandoned object", group: "Security",
+    tier: "Tier 2", tone: "warn",
+    value: (t) => `${num(t.abandoned_object_alerts)} alerts`,
+    sub: () => "unattended bag left in a zone",
+  },
+  {
+    key: "wrong_way", name: "Wrong-way driving", group: "Fleet & outside",
+    tier: "Tier 1", tone: "bad",
+    value: (t) => `${num(t.wrong_way_alerts)} alerts`,
+    sub: () => "vehicle against the allowed flow",
+  },
 ];
 
 /** The event types that represent an operational alert, for the Alerts view. */
@@ -122,6 +146,10 @@ export const ALERT_TYPES = [
   "hazard_alert",
   "overheat_alert",
   "vehicle_crossing",
+  "fall_alert",
+  "weapon_alert",
+  "abandoned_object_alert",
+  "wrong_way_alert",
 ] as const;
 
 export const ALERT_SEVERITY: Record<string, "crit" | "warn" | "info"> = {
@@ -129,6 +157,10 @@ export const ALERT_SEVERITY: Record<string, "crit" | "warn" | "info"> = {
   overheat_alert: "crit",
   proximity_alert: "crit",
   capacity_breach: "crit",
+  weapon_alert: "crit",
+  fall_alert: "crit",
+  wrong_way_alert: "warn",
+  abandoned_object_alert: "warn",
   ppe_violation: "warn",
   vehicle_crossing: "info",
 };

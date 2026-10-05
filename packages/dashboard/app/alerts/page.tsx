@@ -33,10 +33,14 @@ export default function AlertsPage() {
 
   const t = summary?.totals;
   const counts: { label: string; value: number | undefined; tone: "bad" | "warn" | "accent" }[] = [
+    { label: "Weapon", value: t?.weapon_alerts, tone: "bad" },
+    { label: "Fall / slip", value: t?.fall_alerts, tone: "bad" },
     { label: "Fire / smoke", value: t?.hazard_alerts, tone: "bad" },
     { label: "Overheat", value: t?.overheat_alerts, tone: "bad" },
     { label: "Proximity", value: t?.proximity_alerts, tone: "bad" },
     { label: "Capacity", value: t?.capacity_breaches, tone: "bad" },
+    { label: "Abandoned object", value: t?.abandoned_object_alerts, tone: "warn" },
+    { label: "Wrong-way", value: t?.wrong_way_alerts, tone: "warn" },
     { label: "PPE", value: t?.ppe_violations, tone: "warn" },
     { label: "Vehicle crossings", value: t?.vehicle_crossings, tone: "accent" },
   ];

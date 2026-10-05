@@ -1,0 +1,78 @@
+# Live-camera spec for the `demo-master` tenant.
+#
+# Each camera maps a PUBLIC live feed to a person/vehicle vertical the default
+# COCO model can actually run (no trained model needed). `tools/resolve_streams.py`
+# turns `page_url` into a direct stream URL and writes packages/edge-agent/demo-master.yaml.
+#
+# page_url may be:
+#   - a YouTube *live* page  (resolved via yt-dlp; pick a FIXED cam, not a PTZ/scenic one)
+#   - a direct rtsp:// or .m3u8 URL  (passed through unchanged)
+#   - a local file path       (for an offline demo)
+#
+# Replace the placeholder page_urls below with current live cams before a demo —
+# specific live-stream ids rot over time. Good choices: a town-square/plaza cam
+# (crowd/capacity), a fixed intersection (traffic/wrong-way), a pedestrian
+# crossing or shop entrance (retail line), a parking lot (parking).
+
+tenant_id: demo-master
+site_id: demo-master-site
+device_id: edge-demo-master
+
+detector:
+  weights: yolo11n.pt   # swap for a fine-tuned per-site model in production
+  device: auto
+  imgsz: 640
+
+cloud:
+  ingest_url: "http://localhost:8000"
+  flush_interval_seconds: 5
+  heartbeat_interval_seconds: 15
+
+cameras:
+  - id: cam-townsquare
+    page_url: "REPLACE_WITH_LIVE_PLAZA_CAM_URL"   # e.g. a YouTube town-square live cam
+    mode: crowd_density
+    target_fps: 2
+    snapshot_seconds: 3
+    zones:
+      - id: square
+        capacity: 40
+        polygon:
+          - {x: 0.08, y: 0.30}
+          - {x: 0.92, y: 0.30}
+          - {x: 0.92, y: 0.96}
+          - {x: 0.08, y: 0.96}
+
+  - id: cam-intersection
+    page_url: "REPLACE_WITH_LIVE_INTERSECTION_CAM_URL"
+    mode: traffic
+    target_fps: 3
+    snapshot_seconds: 3
+    lines:
+      - id: cordon
+        a: {x: 0.10, y: 0.55}
+        b: {x: 0.90, y: 0.55}
+
+  - id: cam-crosswalk
+    page_url: "REPLACE_WITH_LIVE_CROSSWALK_CAM_URL"
+    mode: retail            # line-crossing people counter (ins/outs)
+    target_fps: 3
+    snapshot_seconds: 3
+    lines:
+      - id: door
+        a: {x: 0.20, y: 0.60}
+        b: {x: 0.80, y: 0.60}
+
+  - id: cam-lot
+    page_url: "REPLACE_WITH_LIVE_PARKING_CAM_URL"
+    mode: capacity          # live headcount/occupancy vs a limit
+    target_fps: 2
+    snapshot_seconds: 3
+    zones:
+      - id: lot
+        capacity: 12
+        polygon:
+          - {x: 0.05, y: 0.35}
+          - {x: 0.95, y: 0.35}
+          - {x: 0.95, y: 0.95}
+          - {x: 0.05, y: 0.95}

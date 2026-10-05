@@ -48,7 +48,11 @@ export default function OverviewPage() {
             (t.capacity_breaches ?? 0) +
             (t.proximity_alerts ?? 0) +
             (t.hazard_alerts ?? 0) +
-            (t.overheat_alerts ?? 0);
+            (t.overheat_alerts ?? 0) +
+            (t.weapon_alerts ?? 0) +
+            (t.fall_alerts ?? 0) +
+            (t.abandoned_object_alerts ?? 0) +
+            (t.wrong_way_alerts ?? 0);
           return (
         <>
           <div className="grid grid-cols-2 gap-3.5 sm:grid-cols-4">
@@ -62,7 +66,7 @@ export default function OverviewPage() {
               label="Open alerts"
               value={num(alertTotal)}
               tone={alertTotal > 0 ? "bad" : "ok"}
-              hint="PPE · capacity · fire · thermal · proximity"
+              hint="PPE · capacity · fire · thermal · proximity · weapon · fall · abandoned · wrong-way"
             />
             <Tile
               label="Avg wait"

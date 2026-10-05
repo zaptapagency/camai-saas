@@ -154,6 +154,29 @@ for i in range(4):
     ev("cam-securedoor", EventType.tailgating_alert, Mode.tailgating, 500 - i*80,
        line_id="door", count=2, labels=["2_together"])
 
+# --- FALL / SLIP (Tier 2) ----------------------------------------------------
+for i in range(3):
+    ev("cam-aisle", EventType.fall_alert, Mode.fall, 500 - i*95,
+       object_class=ObjectClass.person, track_id=900 + i, count=1,
+       labels=[f"{random.randint(3, 25)}s"])
+
+# --- WEAPON (Tier 3) ---------------------------------------------------------
+for i in range(2):
+    ev("cam-frontdesk", EventType.weapon_alert, Mode.weapon, 400 - i*130,
+       zone_id="lobby", count=1, labels=random.choice([["knife"], ["gun"], ["gun", "knife"]]))
+
+# --- ABANDONED OBJECT (Tier 2) -----------------------------------------------
+for i in range(3):
+    ev("cam-concourse", EventType.abandoned_object_alert, Mode.abandoned_object, 450 - i*100,
+       zone_id="hall", object_class=ObjectClass.bag, track_id=1000 + i, count=1,
+       labels=[f"{random.randint(20, 90)}s"])
+
+# --- WRONG-WAY DRIVING (Tier 1) ----------------------------------------------
+for i in range(4):
+    ev("cam-ramp", EventType.wrong_way_alert, Mode.wrong_way, 500 - i*85,
+       line_id="lane", object_class=ObjectClass.vehicle, track_id=1100 + i,
+       count=1, labels=["wrong_way"])
+
 # ---- send events in batches -------------------------------------------------
 BATCH = 50
 sent = 0
@@ -166,7 +189,8 @@ for i in range(0, len(events), BATCH):
 # ---- device heartbeats so Device Health populates ---------------------------
 cams = ["cam-entrance", "cam-lot", "cam-checkout", "cam-kitchen", "cam-dock",
         "cam-street", "cam-hall", "cam-warehouse", "cam-cookline", "cam-walkin", "cam-bay",
-        "cam-drivethru", "cam-plaza", "cam-perimeter", "cam-atrium", "cam-securedoor"]
+        "cam-drivethru", "cam-plaza", "cam-perimeter", "cam-atrium", "cam-securedoor",
+        "cam-aisle", "cam-frontdesk", "cam-concourse", "cam-ramp"]
 for n, cam in enumerate(cams):
     hb = Heartbeat(device_id=f"edge-{cam}", tenant_id=TENANT,
                    agent_version="0.1.0", uptime_seconds=random.uniform(3600, 90000),

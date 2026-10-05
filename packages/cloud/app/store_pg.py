@@ -161,6 +161,18 @@ class PgStore:
             cur.execute("SELECT count(*) FROM events WHERE tenant_id=%s AND type='tailgating_alert'",
                         (tenant_id,))
             tailgating_alerts = _scalar(cur)
+            cur.execute("SELECT count(*) FROM events WHERE tenant_id=%s AND type='fall_alert'",
+                        (tenant_id,))
+            fall_alerts = _scalar(cur)
+            cur.execute("SELECT count(*) FROM events WHERE tenant_id=%s AND type='weapon_alert'",
+                        (tenant_id,))
+            weapon_alerts = _scalar(cur)
+            cur.execute("SELECT count(*) FROM events WHERE tenant_id=%s AND type='abandoned_object_alert'",
+                        (tenant_id,))
+            abandoned_object_alerts = _scalar(cur)
+            cur.execute("SELECT count(*) FROM events WHERE tenant_id=%s AND type='wrong_way_alert'",
+                        (tenant_id,))
+            wrong_way_alerts = _scalar(cur)
 
             cur.execute(
                 """
@@ -248,6 +260,10 @@ class PgStore:
                 "intrusion_alerts": intrusion_alerts,
                 "crowd_alerts": crowd_alerts,
                 "tailgating_alerts": tailgating_alerts,
+                "fall_alerts": fall_alerts,
+                "weapon_alerts": weapon_alerts,
+                "abandoned_object_alerts": abandoned_object_alerts,
+                "wrong_way_alerts": wrong_way_alerts,
                 "avg_service_seconds": avg_service,
                 "service_samples": len(services),
                 "stations_total": stations_total,
