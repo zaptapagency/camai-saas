@@ -59,3 +59,9 @@ Thumbs.db
 
 # Generated demo fleet spec (from tools/generate_demo_fleet.py)
 packages/edge-agent/demo-master-fleet.cams.yaml
+
+# Generated / local demo run configs
+packages/edge-agent/demo-run.yaml
+packages/edge-agent/demo-run.cams.yaml
+packages/edge-agent/demo-master-caltrans.yaml
+packages/edge-agent/caltrans-run.yaml
