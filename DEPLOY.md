@@ -53,6 +53,31 @@ a managed Postgres.
 > `CAMAI_API_ORIGIN` is baked at **build time** (Next resolves rewrites then), so
 > set it as a build env/arg, not just a runtime variable.
 
+## Wire the "Launch 3-hour live demo" button
+
+The public landing page (`docs/`, served via GitHub Pages) has a **Launch 3-hour
+live demo** button. It links to `<dashboardUrl>/demo`, a dashboard route that mints
+a session (`POST /v1/demo/start`) *same-origin* — the dashboard proxies `/v1/*` to
+the cloud API, so there is **no CORS to configure** — and opens the dashboard pinned
+to `demo-master` with a live countdown.
+
+To make it work against your deployment:
+
+1. **Deploy the control plane** (Option A/B/C above) so the dashboard is reachable
+   at a public URL, with `CAMAI_API_ORIGIN` pointing at the cloud API.
+2. **Seed the demo tenant** once (and on each reset):
+   ```bash
+   # against the deployed cloud API
+   CAMAI_DEMO_HOURS=3  # optional; cloud already defaults to 3h
+   PYTHONPATH=packages/schema python tools/seed_demo_account.py demo-master
+   ```
+3. **Point the page at your dashboard**: edit `docs/config.js` →
+   `dashboardUrl: "https://<your-dashboard-host>"`, commit, and GitHub Pages
+   redeploys. (Or test any deployment ad-hoc with `?app=<dashboard-url>` on the page.)
+
+That's it — the button now opens a real 3-hour demo. For live video, also run the
+edge agent against public cams (`tools/resolve_streams.py`, see the README).
+
 ## The edge agent (customer side)
 
 Build and ship [`packages/edge-agent/Dockerfile`](packages/edge-agent/Dockerfile)
