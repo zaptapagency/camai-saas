@@ -1,0 +1,35 @@
+# Pool of PUBLIC live-camera sources, grouped by scene type. The fleet generator
+# (tools/generate_demo_fleet.py) and resolver (tools/resolve_streams.py) draw from
+# this pool, cycling through a scene's URLs so a handful of real feeds can back many
+# logical cameras (each with its own zones/lines).
+#
+# page_url may be a YouTube *live* page (resolved via yt-dlp), a direct rtsp:// or
+# .m3u8 URL, or a local file. REPLACE the placeholders with CURRENT live cams before
+# a demo — specific live-stream ids rot. Pick FIXED cameras (no PTZ/scenic pans).
+#
+# Only scene types that show people/vehicles are useful — the live verticals run on
+# the default COCO model. Good public sources: city "live cam" YouTube channels,
+# DOT traffic cams (many publish .m3u8), harbor/plaza webcams.
+
+scenes:
+  plaza:            # open public space — crowd, capacity, loitering, intrusion, fall
+    - "REPLACE_WITH_LIVE_PLAZA_CAM_1"
+    - "REPLACE_WITH_LIVE_PLAZA_CAM_2"
+    - "REPLACE_WITH_LIVE_PLAZA_CAM_3"
+
+  intersection:     # road junction — traffic, wrong-way, drive-thru timing
+    - "REPLACE_WITH_LIVE_INTERSECTION_CAM_1"
+    - "REPLACE_WITH_LIVE_INTERSECTION_CAM_2"
+    - "REPLACE_WITH_LIVE_INTERSECTION_CAM_3"
+
+  crosswalk:        # pedestrian crossing / shop entrance — retail line, queue, tailgating
+    - "REPLACE_WITH_LIVE_CROSSWALK_CAM_1"
+    - "REPLACE_WITH_LIVE_CROSSWALK_CAM_2"
+
+  parking:          # lot / street parking — parking occupancy, capacity
+    - "REPLACE_WITH_LIVE_PARKING_CAM_1"
+    - "REPLACE_WITH_LIVE_PARKING_CAM_2"
+
+  highway:          # motorway / arterial — traffic volume, wrong-way
+    - "REPLACE_WITH_LIVE_HIGHWAY_CAM_1"
+    - "REPLACE_WITH_LIVE_HIGHWAY_CAM_2"

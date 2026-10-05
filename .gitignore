@@ -56,3 +56,6 @@ packages/edge-agent/demo-live*.yaml
 Thumbs.db
 .idea/
 .vscode/
+
+# Generated demo fleet spec (from tools/generate_demo_fleet.py)
+packages/edge-agent/demo-master-fleet.cams.yaml
