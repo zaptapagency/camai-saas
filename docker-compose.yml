@@ -19,6 +19,9 @@ services:
       # CAMAI_PG_DSN: postgresql://camai:${POSTGRES_PASSWORD}@db:5432/camai
       CAMAI_SNAPSHOT_DIR: /data/snaps
       CAMAI_SNAPSHOT_DB: /data/snaps.db
+      CAMAI_DEMO_DB: /data/demo.db
+      # Length of a shareable "Launch live demo" session, in hours (default 3).
+      CAMAI_DEMO_HOURS: ${CAMAI_DEMO_HOURS:-3}
       # Enforce cert identity on ingest behind a TLS-terminating proxy in prod:
       CAMAI_REQUIRE_MTLS: ${CAMAI_REQUIRE_MTLS:-0}
       STRIPE_API_KEY: ${STRIPE_API_KEY:-}

@@ -196,15 +196,16 @@
   </div>
 </footer>
 
+<script src="config.js"></script>
 <script>
-  // --- Deploy config: point these at your running cloud API + dashboard. ------
-  // Override at deploy time by appending ?api=<apiBase>&app=<dashboardUrl> to the
-  // page URL, or by editing these defaults.
+  // --- Deploy config -----------------------------------------------------------
+  // The dashboard URL comes from config.js (window.CAMAI_CONFIG) so the page can be
+  // repointed without editing this file; ?app=<dashboard-url> overrides per visit.
   const params = new URLSearchParams(location.search);
-  const CONFIG = {
-    apiBase: params.get("api") || "http://localhost:8000",
-    dashboardUrl: params.get("app") || "http://localhost:3000",
-  };
+  const DASHBOARD_URL =
+    params.get("app") ||
+    (window.CAMAI_CONFIG && window.CAMAI_CONFIG.dashboardUrl) ||
+    "http://localhost:3000";
 
   // --- Vertical catalog (mirrors packages/dashboard/lib/verticals.ts) ---------
   const GROUPS = ["Front of house", "Kitchen & safety", "Fleet & outside", "Security"];
@@ -247,26 +248,12 @@
   }
   renderVerticals();
 
-  // --- Launch: mint a demo session, then open the dashboard pinned to it ------
-  async function launchDemo(btn) {
-    const note = document.getElementById("launch-note");
-    const label = btn.innerHTML;
-    btn.style.pointerEvents = "none";
-    btn.innerHTML = "Starting your demo…";
-    try {
-      const res = await fetch(`${CONFIG.apiBase}/v1/demo/start`, { method: "POST" });
-      if (!res.ok) throw new Error(res.status);
-      const s = await res.json();
-      location.href = `${CONFIG.dashboardUrl}/?demo=${encodeURIComponent(s.token)}`;
-    } catch (e) {
-      btn.innerHTML = label;
-      btn.style.pointerEvents = "";
-      if (note) note.textContent = `Couldn't reach the demo backend at ${CONFIG.apiBase}. Set ?api=<cloud-url>&app=<dashboard-url> on this page, or deploy the stack (see DEPLOY.md).`;
-    }
-  }
+  // --- Launch: send the visitor to the dashboard's /demo route, which mints the
+  // session same-origin and opens the dashboard pinned to it (no CORS to config).
+  const demoHref = `${DASHBOARD_URL.replace(/\/$/, "")}/demo`;
   ["launch-top", "launch-hero", "launch-bottom"].forEach(id => {
     const el = document.getElementById(id);
-    if (el) el.addEventListener("click", (e) => { e.preventDefault(); launchDemo(el); });
+    if (el) el.setAttribute("href", demoHref);
   });
 </script>
 </body>
