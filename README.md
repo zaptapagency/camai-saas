@@ -130,6 +130,32 @@ and watch counts appear on the dashboard. This was used to verify the pipeline o
 a live intersection cam (vehicle detection + occupancy + parked/left events) and a
 highway cam (tracking with persistent IDs) before any private deployment.
 
+## Live 3-hour demo (all verticals)
+
+A shareable, time-boxed demo of every vertical at once, for prospects:
+
+1. **Seed the master demo tenant** (cloud must be up on :8000):
+   ```bash
+   PYTHONPATH=packages/schema python tools/seed_demo_account.py demo-master
+   ```
+2. **(Optional) point live public cameras at the person/vehicle verticals** — copy
+   `tools/demo_master_cams.example.yaml`, drop in current live-cam URLs, then
+   resolve them into an edge config (re-run with `--watch 2700` so HLS URLs stay fresh):
+   ```bash
+   python tools/resolve_streams.py --spec tools/demo_master_cams.example.yaml
+   camai-edge --config packages/edge-agent/demo-master.yaml
+   ```
+3. **Hand out the demo** — the landing page (`docs/index.html`, served via GitHub
+   Pages) has a **Launch 3-hour live demo** button. It calls `POST /v1/demo/start`,
+   gets a token scoped to `demo-master`, and opens the dashboard at `/?demo=<token>`.
+   The dashboard locks to the demo tenant, shows a live countdown banner, and flips
+   to a "demo ended" screen when the 3-hour window (`CAMAI_DEMO_HOURS`) closes.
+
+The **Live** verticals (retail, queue, capacity, crowd, staffing, parking, traffic,
+drive-thru, loitering, intrusion, tailgating, wrong-way, fall) run real detection on
+public cameras; the **Simulated** ones (PPE, fire, thermal, proximity, weapon,
+abandoned-object) need a trained model or sensor and show seeded demo data.
+
 ## Status & next steps
 
 This is a **foundation**, not the finished pilot. See [docs/ROADMAP.md](docs/ROADMAP.md)

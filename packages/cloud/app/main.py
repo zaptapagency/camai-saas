@@ -22,6 +22,7 @@ from pydantic import BaseModel
 from camai_schema import EventBatch, Heartbeat, IngestAck
 
 from app import audit
+from app import demo
 from app import snapshots
 from app.billing import month_bounds
 from app.rbac import Role, require_role
@@ -202,6 +203,29 @@ def add_label(tenant_id: str, camera_id: str, body: LabelIn) -> JSONResponse:
 @app.get("/v1/tenants/{tenant_id}/accuracy")
 def tenant_accuracy(tenant_id: str) -> JSONResponse:
     return JSONResponse(snapshots.accuracy(tenant_id))
+
+
+# --- Time-boxed demo sessions ------------------------------------------------
+# A prospect launches a shareable, read-only demo of the `demo-master` tenant for
+# a fixed window (default 3h). Tokens are session handles, not credentials — they
+# authorize viewing the demo tenant's aggregates for the window and nothing else.
+
+
+@app.post("/v1/demo/start")
+def demo_start() -> JSONResponse:
+    """Mint a fresh time-boxed demo session (token + expiry)."""
+    return JSONResponse(demo.start())
+
+
+@app.get("/v1/demo/session")
+def demo_session(token: str) -> JSONResponse:
+    """Validate a demo token; report remaining time / expiry for the countdown."""
+    view = demo.session(token)
+    if view is None:
+        return JSONResponse({"detail": "unknown demo token"}, status_code=404)
+    if view["expired"]:
+        return JSONResponse(view, status_code=410)  # Gone — window closed
+    return JSONResponse(view)
 
 
 @app.get("/v1/tenants/{tenant_id}/usage")

@@ -1,0 +1,273 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>CamAI — Live CCTV Analytics Demo</title>
+<meta name="description" content="Turn existing CCTV into a metered, multi-vertical analytics product. Launch a live 3-hour demo across 19 verticals, powered by edge-first computer vision that self-improves." />
+<style>
+  :root {
+    --bg: #0b0d12; --panel: #141821; --panel-2: #1b202b; --line: #262c38;
+    --fg: #e8ecf3; --muted: #8b95a7; --accent: #4c8dff; --accent-2: #7aa7ff;
+    --ok: #35c28a; --warn: #e2b23c; --bad: #e5604d;
+    --radius: 16px; --maxw: 1120px;
+  }
+  @media (prefers-color-scheme: light) {
+    :root:not([data-theme="dark"]) {
+      --bg: #f6f8fb; --panel: #ffffff; --panel-2: #eef2f8; --line: #e1e7f0;
+      --fg: #0f1722; --muted: #5a6473; --accent: #2f6ae0;
+    }
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0; background: var(--bg); color: var(--fg);
+    font: 16px/1.6 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  a { color: inherit; }
+  .wrap { max-width: var(--maxw); margin: 0 auto; padding: 0 20px; }
+
+  header {
+    position: sticky; top: 0; z-index: 20; backdrop-filter: blur(10px);
+    background: color-mix(in srgb, var(--bg) 82%, transparent);
+    border-bottom: 1px solid var(--line);
+  }
+  .nav { display: flex; align-items: center; gap: 20px; height: 60px; }
+  .brand { font-weight: 700; font-size: 20px; letter-spacing: -0.02em; }
+  .brand span { color: var(--accent); }
+  .nav .links { margin-left: auto; display: flex; gap: 22px; align-items: center; }
+  .nav .links a { color: var(--muted); text-decoration: none; font-size: 14px; }
+  .nav .links a:hover { color: var(--fg); }
+
+  .btn {
+    display: inline-flex; align-items: center; gap: 8px; cursor: pointer;
+    background: var(--accent); color: #fff; border: 0; border-radius: 10px;
+    padding: 11px 18px; font-size: 14px; font-weight: 600; text-decoration: none;
+    transition: opacity .15s, transform .15s;
+  }
+  .btn:hover { opacity: .92; transform: translateY(-1px); }
+  .btn.ghost { background: transparent; color: var(--fg); border: 1px solid var(--line); }
+  .btn.lg { padding: 14px 24px; font-size: 15px; }
+  .btn .dot { width: 7px; height: 7px; border-radius: 50%; background: #fff; animation: pulse 1.6s infinite; }
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: .35; } }
+
+  .hero { padding: 86px 0 54px; text-align: center; }
+  .hero h1 { font-size: clamp(34px, 6vw, 56px); line-height: 1.05; letter-spacing: -0.03em; margin: 0 0 18px; }
+  .hero h1 .grad {
+    background: linear-gradient(100deg, var(--accent), var(--accent-2));
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+  .hero p { font-size: clamp(16px, 2.3vw, 20px); color: var(--muted); max-width: 680px; margin: 0 auto 30px; }
+  .cta-row { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
+  .note { margin-top: 16px; font-size: 13px; color: var(--muted); }
+
+  .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin: 46px 0; }
+  .stat { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 20px; text-align: center; }
+  .stat .n { font-size: 30px; font-weight: 700; letter-spacing: -0.02em; }
+  .stat .l { font-size: 12.5px; color: var(--muted); margin-top: 4px; }
+
+  section.block { padding: 48px 0; border-top: 1px solid var(--line); }
+  .block h2 { font-size: clamp(24px, 4vw, 34px); letter-spacing: -0.02em; margin: 0 0 8px; text-align: center; }
+  .block .sub { text-align: center; color: var(--muted); max-width: 640px; margin: 0 auto 32px; }
+
+  .group-title { font-size: 13px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin: 28px 0 12px; font-weight: 600; }
+  .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+  .card { position: relative; background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 16px 16px 16px 20px; overflow: hidden; }
+  .card .bar { position: absolute; left: 0; top: 0; height: 100%; width: 4px; }
+  .card h3 { margin: 0; font-size: 15px; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  .card p { margin: 6px 0 0; font-size: 13px; color: var(--muted); }
+  .badge { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; padding: 2px 7px; border-radius: 6px; white-space: nowrap; }
+  .badge.live { background: color-mix(in srgb, var(--ok) 20%, transparent); color: var(--ok); }
+  .badge.sim { background: color-mix(in srgb, var(--warn) 20%, transparent); color: var(--warn); }
+  .tier { font-size: 10px; color: var(--muted); border: 1px solid var(--line); border-radius: 5px; padding: 1px 6px; }
+
+  .flywheel { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+  .step { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 20px; }
+  .step .k { width: 30px; height: 30px; border-radius: 9px; background: color-mix(in srgb, var(--accent) 18%, transparent); color: var(--accent); font-weight: 700; display: flex; align-items: center; justify-content: center; margin-bottom: 12px; }
+  .step h4 { margin: 0 0 6px; font-size: 15px; }
+  .step p { margin: 0; font-size: 13px; color: var(--muted); }
+
+  .features { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+  .feat { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 18px; }
+  .feat h4 { margin: 0 0 6px; font-size: 15px; }
+  .feat p { margin: 0; font-size: 13px; color: var(--muted); }
+
+  .closing { text-align: center; padding: 64px 0; }
+  .closing h2 { margin-bottom: 18px; }
+
+  footer { border-top: 1px solid var(--line); padding: 28px 0; color: var(--muted); font-size: 13px; text-align: center; }
+  footer .priv { font-size: 12px; margin-top: 6px; }
+
+  @media (max-width: 820px) {
+    .stats, .flywheel, .features { grid-template-columns: repeat(2, 1fr); }
+    .grid { grid-template-columns: 1fr; }
+    .nav .links a:not(.btn) { display: none; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap nav">
+    <div class="brand">Cam<span>AI</span></div>
+    <nav class="links">
+      <a href="#verticals">Verticals</a>
+      <a href="#flywheel">Self-improving</a>
+      <a href="#features">Platform</a>
+      <a href="#" class="btn" id="launch-top"><span class="dot"></span>Launch live demo</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <div class="wrap">
+    <section class="hero">
+      <h1>Turn existing CCTV into a<br /><span class="grad">multi-vertical analytics product</span></h1>
+      <p>One edge-first computer-vision pipeline. 19 analytics verticals. Real detection on live
+         public cameras, a model that measurably improves itself, and billing by the camera —
+         all with no raw video ever leaving the site.</p>
+      <div class="cta-row">
+        <a href="#" class="btn lg" id="launch-hero"><span class="dot"></span>Launch 3-hour live demo</a>
+        <a href="#verticals" class="btn ghost lg">Explore the verticals</a>
+      </div>
+      <div class="note" id="launch-note">A fresh demo tenant, pre-loaded across every vertical, live for 3 hours.</div>
+    </section>
+
+    <div class="stats">
+      <div class="stat"><div class="n">19</div><div class="l">analytics verticals</div></div>
+      <div class="stat"><div class="n">1</div><div class="l">pipeline, many products</div></div>
+      <div class="stat"><div class="n">3h</div><div class="l">self-serve live demo</div></div>
+      <div class="stat"><div class="n">0</div><div class="l">raw video leaves site</div></div>
+    </div>
+  </div>
+
+  <section class="block" id="verticals">
+    <div class="wrap">
+      <h2>Every vertical, one pipeline</h2>
+      <p class="sub">The same edge agent runs them all. <b>Live</b> verticals detect real people &amp; vehicles
+         on public cameras today; <b>Simulated</b> ones need a trained model or sensor and show representative data in the demo.</p>
+      <div id="verticals-root"></div>
+    </div>
+  </section>
+
+  <section class="block" id="flywheel">
+    <div class="wrap">
+      <h2>A product that improves itself</h2>
+      <p class="sub">Accuracy isn't a marketing claim — it's measured, and it compounds. The accuracy flywheel
+         turns live operation into a continuously better model.</p>
+      <div class="flywheel">
+        <div class="step"><div class="k">1</div><h4>Snapshot</h4><p>The edge pushes an annotated frame + its predicted count (opt-in, privacy-first — no continuous video).</p></div>
+        <div class="step"><div class="k">2</div><h4>Label</h4><p>A human confirms the true count in the dashboard. Every judgement becomes a durable training sample.</p></div>
+        <div class="step"><div class="k">3</div><h4>Measure</h4><p>Per-camera, per-vertical accuracy (MAE, % error) is computed from the samples — an honest, auditable number.</p></div>
+        <div class="step"><div class="k">4</div><h4>Retrain &amp; promote</h4><p>Once enough labels accrue, a count-gated retrain produces a better model and promotes it per site.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="block" id="features">
+    <div class="wrap">
+      <h2>Built like a platform</h2>
+      <p class="sub">Not a counting script — an enterprise-ready control plane.</p>
+      <div class="features">
+        <div class="feat"><h4>Edge-first privacy</h4><p>YOLO + tracking run on-site; only counts and events sync out. No facial recognition, anonymous by design.</p></div>
+        <div class="feat"><h4>Live public cameras</h4><p>Validated end-to-end against real public feeds — same code path as a customer's private camera.</p></div>
+        <div class="feat"><h4>Metered billing</h4><p>Active camera per month, metered through Stripe. Transparent usage view; no retroactive disputes.</p></div>
+        <div class="feat"><h4>Fleet management</h4><p>Heartbeats, config push, canary rollouts and device-health alerts — per-camera billing stays operationally sane.</p></div>
+        <div class="feat"><h4>Multi-tenant &amp; RBAC</h4><p>Row-level tenant isolation, roles (viewer→owner), an append-only audit log, mTLS device identity.</p></div>
+        <div class="feat"><h4>Real-time alerts</h4><p>PPE, capacity, fire, weapon, fall, intrusion and more — severity-ranked, replayable from the live feed.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="closing">
+    <div class="wrap">
+      <h2>See it running — live, in 3 hours</h2>
+      <div class="cta-row">
+        <a href="#" class="btn lg" id="launch-bottom"><span class="dot"></span>Launch 3-hour live demo</a>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    CamAI — edge-first CCTV analytics. Proprietary © Alaqtar / CamAI.
+    <div class="priv">No raw video leaves the customer network. Anonymous, zone-level analytics only.</div>
+  </div>
+</footer>
+
+<script>
+  // --- Deploy config: point these at your running cloud API + dashboard. ------
+  // Override at deploy time by appending ?api=<apiBase>&app=<dashboardUrl> to the
+  // page URL, or by editing these defaults.
+  const params = new URLSearchParams(location.search);
+  const CONFIG = {
+    apiBase: params.get("api") || "http://localhost:8000",
+    dashboardUrl: params.get("app") || "http://localhost:3000",
+  };
+
+  // --- Vertical catalog (mirrors packages/dashboard/lib/verticals.ts) ---------
+  const GROUPS = ["Front of house", "Kitchen & safety", "Fleet & outside", "Security"];
+  const VERTICALS = [
+    { name: "Retail foot traffic", group: "Front of house", tier: "Core", live: true, sub: "Entries, exits & in-store occupancy" },
+    { name: "Queue wait", group: "Front of house", tier: "Core", live: true, sub: "Per-person wait time in line" },
+    { name: "Capacity limit", group: "Front of house", tier: "Tier 1", live: true, sub: "Zone occupancy vs a limit" },
+    { name: "Crowd density", group: "Front of house", tier: "Tier 1", live: true, sub: "Headcount vs crush threshold" },
+    { name: "Staffing coverage", group: "Kitchen & safety", tier: "Core", live: true, sub: "Stations active vs idle (anonymous)" },
+    { name: "PPE compliance", group: "Kitchen & safety", tier: "Core", live: false, sub: "Helmet / vest — needs a PPE model" },
+    { name: "Fire / smoke", group: "Kitchen & safety", tier: "Tier 3", live: false, sub: "Hazard alerts — needs a fire model" },
+    { name: "Thermal / overheat", group: "Kitchen & safety", tier: "Tier 4", live: false, sub: "Fever/overheat — needs a thermal cam" },
+    { name: "Fall / slip", group: "Kitchen & safety", tier: "Tier 2", live: true, sub: "Person collapsed on the floor" },
+    { name: "Parking occupancy", group: "Fleet & outside", tier: "Core", live: true, sub: "Per-space vehicle state" },
+    { name: "Traffic flow", group: "Fleet & outside", tier: "Core", live: true, sub: "Directional vehicle counts" },
+    { name: "Drive-thru timing", group: "Fleet & outside", tier: "Tier 1", live: true, sub: "Vehicle service time per lane" },
+    { name: "Forklift proximity", group: "Fleet & outside", tier: "Tier 2", live: false, sub: "Near-miss — needs a forklift class" },
+    { name: "Wrong-way driving", group: "Fleet & outside", tier: "Tier 1", live: true, sub: "Vehicle against the allowed flow" },
+    { name: "Loitering", group: "Security", tier: "Tier 1", live: true, sub: "Prolonged presence in a zone" },
+    { name: "Intrusion", group: "Security", tier: "Tier 1", live: true, sub: "Restricted / after-hours zone" },
+    { name: "Tailgating", group: "Security", tier: "Tier 1", live: true, sub: "Piggybacking a secure line" },
+    { name: "Weapon", group: "Security", tier: "Tier 3", live: false, sub: "Gun/knife — needs a weapon model" },
+    { name: "Abandoned object", group: "Security", tier: "Tier 2", live: false, sub: "Unattended bag left in a zone" },
+  ];
+
+  function renderVerticals() {
+    const root = document.getElementById("verticals-root");
+    const toneForGroup = { "Front of house": "var(--accent)", "Kitchen & safety": "var(--warn)", "Fleet & outside": "var(--accent-2)", "Security": "var(--bad)" };
+    root.innerHTML = GROUPS.map(g => {
+      const cards = VERTICALS.filter(v => v.group === g).map(v => `
+        <div class="card">
+          <span class="bar" style="background:${toneForGroup[g]}"></span>
+          <h3>${v.name}
+            <span class="badge ${v.live ? "live" : "sim"}">${v.live ? "Live" : "Simulated"}</span>
+          </h3>
+          <p>${v.sub} <span class="tier">${v.tier}</span></p>
+        </div>`).join("");
+      return `<div class="group-title">${g}</div><div class="grid">${cards}</div>`;
+    }).join("");
+  }
+  renderVerticals();
+
+  // --- Launch: mint a demo session, then open the dashboard pinned to it ------
+  async function launchDemo(btn) {
+    const note = document.getElementById("launch-note");
+    const label = btn.innerHTML;
+    btn.style.pointerEvents = "none";
+    btn.innerHTML = "Starting your demo…";
+    try {
+      const res = await fetch(`${CONFIG.apiBase}/v1/demo/start`, { method: "POST" });
+      if (!res.ok) throw new Error(res.status);
+      const s = await res.json();
+      location.href = `${CONFIG.dashboardUrl}/?demo=${encodeURIComponent(s.token)}`;
+    } catch (e) {
+      btn.innerHTML = label;
+      btn.style.pointerEvents = "";
+      if (note) note.textContent = `Couldn't reach the demo backend at ${CONFIG.apiBase}. Set ?api=<cloud-url>&app=<dashboard-url> on this page, or deploy the stack (see DEPLOY.md).`;
+    }
+  }
+  ["launch-top", "launch-hero", "launch-bottom"].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.addEventListener("click", (e) => { e.preventDefault(); launchDemo(el); });
+  });
+</script>
+</body>
+</html>

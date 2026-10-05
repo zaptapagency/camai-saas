@@ -13,7 +13,7 @@ import { REFRESH_OPTIONS, useTenant } from "@/lib/tenant";
 import { useRole } from "@/lib/roles";
 
 export function TenantControls() {
-  const { tenantId, setTenantId, refreshMs, setRefreshMs } = useTenant();
+  const { tenantId, setTenantId, refreshMs, setRefreshMs, demo } = useTenant();
   const { can } = useRole();
   const [draft, setDraft] = useState(tenantId);
 
@@ -25,6 +25,17 @@ export function TenantControls() {
       setDraft(tenantId);
     }
   }, [tenantId]);
+
+  // In a time-boxed demo the view is pinned to the demo tenant — no switching.
+  if (demo.active) {
+    return (
+      <div className="flex items-center gap-2 text-xs text-muted">
+        <span className="rounded-md bg-panel-2 px-2.5 py-1.5 font-medium text-fg">
+          Live demo · all verticals
+        </span>
+      </div>
+    );
+  }
 
   const canSwitchTenant = can("manage:billing"); // admin-only in the stub model
 

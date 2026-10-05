@@ -196,6 +196,16 @@ export interface Usage {
   plan: string | null;
 }
 
+/** A time-boxed demo session (mirrors app.demo). */
+export interface DemoSession {
+  token: string;
+  tenant_id: string;
+  created_at: string;
+  expires_at: string;
+  seconds_remaining: number;
+  expired: boolean;
+}
+
 /** Metadata for the latest opt-in annotated snapshot of a camera. */
 export interface SnapshotMeta {
   camera_id: string;
@@ -331,6 +341,13 @@ export const api = {
 
   accuracy: (tenantId: string, signal?: AbortSignal) =>
     getJson<Accuracy>(`/v1/tenants/${enc(tenantId)}/accuracy`, signal),
+
+  /** Mint a fresh time-boxed demo session (token + expiry). */
+  demoStart: () => postJson<DemoSession>(`/v1/demo/start`, {}),
+
+  /** Validate a demo token and read its countdown. Throws ApiError(410) once expired. */
+  demoSession: (token: string, signal?: AbortSignal) =>
+    getJson<DemoSession>(`/v1/demo/session?token=${enc(token)}`, signal),
 
   /** Record a human-confirmed count for the camera's latest snapshot. */
   label: (tenantId: string, cameraId: string, actual_count: number) =>
