@@ -27,12 +27,20 @@ rtsp://, http(s) .m3u8 and file sources are passed through unchanged.
 from __future__ import annotations
 
 import argparse
+import shutil
 import subprocess
 import sys
 import time
 from pathlib import Path
 
 import yaml
+
+
+def _ytdlp_cmd() -> list[str]:
+    """Prefer the yt-dlp binary; fall back to `python -m yt_dlp` (module-only installs)."""
+    if shutil.which("yt-dlp"):
+        return ["yt-dlp"]
+    return [sys.executable, "-m", "yt_dlp"]
 
 REPO = Path(__file__).resolve().parents[1]
 DEFAULT_SPEC = REPO / "tools" / "demo_master_cams.example.yaml"
@@ -46,7 +54,7 @@ def resolve_source(page_url: str) -> str:
         return page_url
     if "youtube.com" in low or "youtu.be" in low:
         out = subprocess.run(
-            ["yt-dlp", "-g", "--extractor-args",
+            [*_ytdlp_cmd(), "-g", "--extractor-args",
              "youtube:player_client=android", page_url],
             capture_output=True, text=True, timeout=60,
         )
