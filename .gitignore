@@ -69,3 +69,4 @@ packages/edge-agent/nyc-run.yaml
 packages/edge-agent/nyc-run.cams.yaml
 packages/edge-agent/street-run.yaml
 packages/edge-agent/street-run.cams.yaml
+camera-wall.html
