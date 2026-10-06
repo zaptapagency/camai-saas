@@ -20,9 +20,15 @@ import urllib.request
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[1]
-# Busy urban districts first (Bay Area, LA, Sacramento, San Diego, OC) for variety.
-DISTRICTS = [4, 7, 3, 11, 12, 8, 5, 6, 10, 1]
+# Busy urban districts (LA, OC, San Diego, Bay Area, Sacramento, …). We round-robin
+# across them so a large wall spans regions and more tiles are actually live.
+DISTRICTS = [7, 12, 11, 4, 8, 3, 5, 6, 10, 1]
 URL = "https://cwwp2.dot.ca.gov/data/d{n}/cctv/cctvStatusD{n:02d}.json"
+
+# These are freeway/arterial scenes (vehicles), so the verticals CamAI can honestly
+# run on them are traffic + wrong-way — nothing people-based or model-gated.
+def vertical_for(i: int) -> str:
+    return "wrong-way" if i % 5 == 4 else "traffic"
 
 
 def fetch(n: int) -> list[dict]:
@@ -63,11 +69,15 @@ HTML = """<!doctype html>
   .tile img {{ width:100%; height:100%; object-fit:cover; display:block; background:#0f131a; }}
   .cap {{ position:absolute; left:0; right:0; bottom:0; padding:5px 8px; font-size:11px; background:linear-gradient(transparent,rgba(0,0,0,.78)); color:#dfe6f0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }}
   .tag {{ position:absolute; top:6px; left:6px; font-size:9px; font-weight:700; letter-spacing:.04em; background:rgba(0,0,0,.6); color:#9fb4d8; padding:2px 6px; border-radius:5px; }}
+  .vtag {{ position:absolute; top:6px; right:6px; font-size:9px; font-weight:700; letter-spacing:.04em; padding:2px 6px; border-radius:5px; display:inline-flex; align-items:center; gap:4px; }}
+  .vtag.traffic {{ background:rgba(76,141,255,.22); color:#8fb6ff; }}
+  .vtag.wrongway {{ background:rgba(229,96,77,.22); color:#f0a08f; }}
+  .vtag::before {{ content:"ML"; font-size:8px; background:rgba(53,194,138,.3); color:#7ee0b4; padding:0 3px; border-radius:3px; }}
 </style></head>
 <body>
 <header>
   <div class="brand">Cam<span>AI</span></div>
-  <div class="meta">Live Camera Wall · <b>{count}</b> real public cameras (Caltrans) · auto-refresh {refresh}s</div>
+  <div class="meta">Live Camera Wall · <b>{count}</b> real cameras · ML-supported verticals: <b>traffic</b> ({traffic}) + <b>wrong-way</b> ({wrongway}) · auto-refresh {refresh}s</div>
   <span class="live"><span class="dot"></span>LIVE</span>
 </header>
 <div class="grid" id="grid"></div>
@@ -77,7 +87,9 @@ HTML = """<!doctype html>
   const grid = document.getElementById("grid");
   CAMS.forEach((c, i) => {{
     const t = document.createElement("div"); t.className = "tile";
+    const vcls = c.vertical === "wrong-way" ? "wrongway" : "traffic";
     t.innerHTML = `<span class="tag">${{c.d}}</span>
+      <span class="vtag ${{vcls}}">${{c.vertical}}</span>
       <img loading="lazy" alt="${{c.name}}" src="${{c.img}}?t=${{Date.now()}}"
            onerror="this.style.opacity=.25">
       <div class="cap">${{c.name}}</div>`;
@@ -102,15 +114,30 @@ def main() -> None:
     ap.add_argument("--out", type=Path, default=REPO / "camera-wall.html")
     args = ap.parse_args()
 
-    cams: list[dict] = []
+    # Fetch each district, then round-robin interleave so the wall spans regions.
+    per_district: list[list[dict]] = []
     for n in DISTRICTS:
-        cams.extend(fetch(n))
-        print(f"  d{n}: total {len(cams)} cameras collected")
+        got = fetch(n)
+        print(f"  d{n}: {len(got)} cameras")
+        if got:
+            per_district.append(got)
+        if sum(len(x) for x in per_district) >= args.count * 1.5 and len(per_district) >= 3:
+            break
+    cams: list[dict] = []
+    for i in range(max((len(x) for x in per_district), default=0)):
+        for lst in per_district:
+            if i < len(lst):
+                cams.append(lst[i])
         if len(cams) >= args.count:
             break
     cams = cams[: args.count]
+    # Tag each with the CamAI vertical it supports.
+    for i, c in enumerate(cams):
+        c["vertical"] = vertical_for(i)
+    n_traffic = sum(1 for c in cams if c["vertical"] == "traffic")
 
     html = HTML.format(count=len(cams), refresh=args.refresh,
+                       traffic=n_traffic, wrongway=len(cams) - n_traffic,
                        cams=json.dumps(cams, ensure_ascii=False))
     args.out.write_text(html, encoding="utf-8")
     print(f"wrote {args.out} — {len(cams)} real live cameras")
