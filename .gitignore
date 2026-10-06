@@ -65,3 +65,7 @@ packages/edge-agent/demo-run.yaml
 packages/edge-agent/demo-run.cams.yaml
 packages/edge-agent/demo-master-caltrans.yaml
 packages/edge-agent/caltrans-run.yaml
+packages/edge-agent/nyc-run.yaml
+packages/edge-agent/nyc-run.cams.yaml
+packages/edge-agent/street-run.yaml
+packages/edge-agent/street-run.cams.yaml
