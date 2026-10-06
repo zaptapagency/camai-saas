@@ -97,9 +97,16 @@ class Detector:
         if not results:
             return []
         r = results[0]
-        if r.boxes is None or r.boxes.id is None:
+        if r.boxes is None:
             return []
 
+        # ByteTrack only assigns ids when it can associate across consecutive
+        # frames. On temporally-sparse sources (polled still-image cameras) it may
+        # assign none — but the detections are still valid, so keep them with
+        # track_id=None rather than discarding the whole frame. Counters that need
+        # a persistent id (line-crossing) simply skip id-less detections; per-frame
+        # counting (occupancy/headcount) still works.
+        ids = r.boxes.id
         out: list[Detection] = []
         boxes = r.boxes
         for i in range(len(boxes)):
@@ -110,7 +117,7 @@ class Detector:
             x1, y1, x2, y2 = (float(v) for v in boxes.xyxy[i].tolist())
             out.append(
                 Detection(
-                    track_id=int(boxes.id[i].item()),
+                    track_id=int(ids[i].item()) if ids is not None else None,
                     object_class=obj_class,
                     confidence=float(boxes.conf[i].item()),
                     x1=x1,

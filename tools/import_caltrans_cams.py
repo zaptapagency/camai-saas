@@ -49,23 +49,29 @@ def fetch_district(n: int) -> list[dict]:
     cams = []
     for row in data.get("data", []):
         c = row.get("cctv", {})
-        hls = (c.get("imageData", {}) or {}).get("streamingVideoURL", "")
-        if not hls or ".m3u8" not in hls:
+        imgdata = c.get("imageData", {}) or {}
+        hls = imgdata.get("streamingVideoURL", "")
+        img = (imgdata.get("static") or {}).get("currentImageURL", "")
+        if not hls and not img:
             continue
         loc = c.get("location", {})
-        cams.append({"name": loc.get("locationName", ""), "hls": hls,
+        cams.append({"name": loc.get("locationName", ""), "hls": hls, "img": img,
                      "lat": loc.get("latitude"), "lng": loc.get("longitude")})
     return cams
 
 
-def build(cams: list[dict], base_url: str) -> dict:
+def build(cams: list[dict], base_url: str, use_image: bool) -> dict:
     out = []
     for i, cam in enumerate(cams):
+        # Image-poll (JPEG snapshot) or HLS stream as the frame source.
+        source = cam["img"] if use_image else cam["hls"]
+        if not source:
+            continue
         # Freeway scenes: mostly traffic volume, a slice watched for wrong-way.
         mode = "wrong_way" if i % 5 == 4 else "traffic"
         out.append({
             "id": slug(cam["name"], i),
-            "source": cam["hls"],
+            "source": source,
             "mode": mode,
             "target_fps": 2,
             "min_confidence": 0.35,
@@ -88,6 +94,9 @@ def main() -> None:
     ap.add_argument("--districts", type=int, nargs="*", default=DISTRICTS)
     ap.add_argument("--max", type=int, default=0, help="cap cameras written (0 = all)")
     ap.add_argument("--base", default="http://localhost:8000")
+    ap.add_argument("--image", action="store_true",
+                    help="use each camera's JPEG snapshot URL (image-poll ingest) "
+                         "instead of its HLS stream — runs without a video pipeline")
     args = ap.parse_args()
 
     all_cams: list[dict] = []
@@ -100,7 +109,7 @@ def main() -> None:
     if args.max:
         all_cams = all_cams[: args.max]
 
-    config = build(all_cams, args.base)
+    config = build(all_cams, args.base, args.image)
     args.out.write_text(yaml.safe_dump(config, sort_keys=False), encoding="utf-8")
     n_traffic = sum(1 for c in config["cameras"] if c["mode"] == "traffic")
     print(f"wrote {args.out} — {len(config['cameras'])} REAL Caltrans cameras "
