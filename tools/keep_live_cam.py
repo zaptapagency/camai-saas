@@ -29,8 +29,11 @@ def log(msg: str) -> None:
 
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__)
-    ap.add_argument("--spec", type=Path, default=REPO / "packages/edge-agent/demo-run.cams.yaml")
+    ap.add_argument("--spec", type=Path, default=REPO / "packages/edge-agent/demo-run.cams.yaml",
+                    help="cam spec to re-resolve each restart (YouTube/HLS sources)")
     ap.add_argument("--out", type=Path, default=REPO / "packages/edge-agent/demo-run.yaml")
+    ap.add_argument("--config", type=Path, default=None,
+                    help="run this ready config directly, skipping resolve (e.g. image-poll cams)")
     ap.add_argument("--queue", default=os.path.join(os.environ.get("TEMP", "/tmp"), "camai-demo-queue.db"))
     ap.add_argument("--backoff", type=float, default=10.0, help="seconds between restarts")
     args = ap.parse_args()
@@ -38,17 +41,21 @@ def main() -> None:
     env = dict(os.environ)
     env["PYTHONPATH"] = os.pathsep.join([str(REPO / "packages/schema"), str(REPO / "packages/edge-agent")])
 
-    log(f"supervising {args.spec.name} (pid {os.getpid()})")
+    config = args.config or args.out
+    log(f"supervising {config.name} (pid {os.getpid()}, resolve={args.config is None})")
     while True:
         try:
-            subprocess.run([sys.executable, str(REPO / "tools/resolve_streams.py"),
-                            "--spec", str(args.spec), "--out", str(args.out)],
-                           cwd=str(REPO), check=False)
+            # Stream sources (YouTube/HLS) need a fresh URL each restart; a ready
+            # config (image-poll, direct RTSP) is run as-is.
+            if args.config is None:
+                subprocess.run([sys.executable, str(REPO / "tools/resolve_streams.py"),
+                                "--spec", str(args.spec), "--out", str(args.out)],
+                               cwd=str(REPO), check=False)
             log("edge agent starting")
             rc = subprocess.run([sys.executable, "-m", "camai_edge.main",
-                                 "--config", str(args.out), "--queue", args.queue],
+                                 "--config", str(config), "--queue", args.queue],
                                 cwd=str(REPO), env=env).returncode
-            log(f"edge agent exited ({rc}); re-resolving + restarting in {args.backoff:.0f}s")
+            log(f"edge agent exited ({rc}); restarting in {args.backoff:.0f}s")
         except KeyboardInterrupt:
             log("stopped")
             return
