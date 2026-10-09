@@ -24,7 +24,7 @@ Run AI on cameras the customer already owns (our core angle).
 Also in the enterprise VMS/surveillance tier (less SaaS/edge-first, more incumbent):
 **Eagle Eye Networks, Genetec, Milestone, Avigilon (Motorola), BriefCam (Canon)**.
 
-**Deep-dive teardowns:** [CamAI vs Spot AI](competitor-spot-ai.md).
+**Deep-dive teardowns:** [CamAI vs Spot AI](competitor-spot-ai.md) · **Sales battlecard:** [CamAI vs Spot AI](battlecard-spot-ai.md).
 
 ## 2. Vertical specialists (overlap specific CamAI verticals)
 
